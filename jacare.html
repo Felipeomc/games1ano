@@ -1,0 +1,751 @@
+<title>Robô Jacaré</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canopy-deep:#123321;
+  --canopy:#1c4d31;
+  --forest-mid:#2f6b42;
+  --forest-light:#5fa06b;
+  --earth:#6b4326;
+  --earth-light:#8a5c37;
+  --sky-top:#bfe8ef;
+  --sky-bot:#eaf7e0;
+  --sun:#f6c445;
+  --panel:#fbf3df;
+  --panel-edge:#c9a35c;
+  --ink:#2a2016;
+  --ink-soft:#5c5142;
+  --danger:#d64a3a;
+  --danger-dark:#9c2d22;
+  --accent:#e0803a;
+  --accent-dark:#a4531c;
+  --ok:#3f9457;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--canopy-deep); color:var(--ink);
+  font-family:'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; padding-inline:16px; padding-block:12px;
+}
+#stage{
+  position:relative; width:100%; max-width:1040px;
+  aspect-ratio:16/9; border-radius:22px; overflow:hidden;
+  box-shadow:0 0 0 6px var(--earth), 0 18px 50px rgba(0,0,0,.5);
+  background:linear-gradient(var(--sky-top), var(--sky-bot));
+}
+#game{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none;}
+
+.overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(rgba(10,26,16,.72), rgba(10,26,16,.86));
+  padding:20px; text-align:center;
+}
+.overlay[hidden]{display:none!important;}
+
+.panel{
+  background:var(--panel); border:4px solid var(--panel-edge); border-radius:20px;
+  padding:22px 26px; max-width:92%; width:520px; box-shadow:0 10px 0 rgba(0,0,0,.25);
+}
+h1{
+  margin:0 0 4px; font-size:clamp(28px,6vw,44px); color:var(--forest-mid);
+  text-shadow:0 3px 0 rgba(0,0,0,.12); text-wrap:balance;
+}
+.sub{margin:0 0 18px; color:var(--ink-soft); font-weight:600; font-size:15px;}
+
+label{display:block; text-align:left; font-weight:700; font-size:14px; color:var(--ink-soft); margin-bottom:6px;}
+#nameInput{
+  width:100%; font-family:inherit; font-size:18px; font-weight:700; color:var(--ink);
+  padding:10px 14px; border-radius:12px; border:3px solid var(--panel-edge); background:#fffdf6;
+  margin-bottom:16px;
+}
+#nameInput:focus{outline:3px solid var(--accent); outline-offset:1px;}
+
+.chars{display:flex; gap:14px; justify-content:center; margin-bottom:18px;}
+.charCard{
+  flex:1; max-width:150px; border:3px solid var(--panel-edge); background:#fffdf6;
+  border-radius:16px; padding:10px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:15px; color:var(--ink);
+}
+.charCard canvas{display:block; width:80px; height:96px; margin:0 auto 6px;}
+.charCard[aria-pressed="true"]{border-color:var(--ok); background:#eaf7ea; box-shadow:0 0 0 3px rgba(63,148,87,.35);}
+.charCard:focus-visible{outline:3px solid var(--accent);}
+
+.bigBtn{
+  font-family:inherit; font-weight:800; font-size:20px; color:#fff;
+  background:var(--ok); border:none; border-radius:14px; padding:14px 20px;
+  width:100%; cursor:pointer; box-shadow:0 5px 0 #2c6f3d;
+}
+.bigBtn:disabled{background:#9db79f; box-shadow:0 5px 0 #7d947e; cursor:not-allowed;}
+.bigBtn:not(:disabled):active{transform:translateY(3px); box-shadow:0 2px 0 #2c6f3d;}
+.hint{margin-top:10px; font-size:12px; color:var(--ink-soft); font-weight:600;}
+
+.hud{position:absolute; inset:0; pointer-events:none; font-weight:800; color:#fff;}
+.hud [hidden]{display:none!important;}
+.hearts{position:absolute; top:12px; right:14px; display:flex; gap:4px;}
+.heart{width:24px; height:24px;}
+.coins{
+  position:absolute; top:12px; left:14px; display:flex; align-items:center; gap:6px;
+  background:rgba(20,40,26,.55); padding:6px 12px 6px 6px; border-radius:999px; font-size:16px;
+}
+.coinDot{width:20px; height:20px; border-radius:50%; background:var(--sun); border:2px solid #b9860f; display:inline-block;}
+.phaseTag{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(20,40,26,.55); padding:6px 16px; border-radius:999px; font-size:14px; letter-spacing:.5px;
+}
+
+.banner{
+  position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+  background:rgba(20,40,26,.86); border:3px solid var(--sun); border-radius:16px;
+  padding:14px 26px; font-size:clamp(18px,4vw,28px); color:#fff; text-align:center; white-space:nowrap;
+}
+.toast{
+  position:absolute; left:50%; bottom:18%; transform:translateX(-50%);
+  background:rgba(255,255,255,.95); color:var(--ink); border:3px solid var(--accent);
+  border-radius:14px; padding:10px 16px; font-size:14px; font-weight:700; max-width:80%;
+  text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.15);
+}
+
+.touchCtl{position:absolute; inset:0; pointer-events:none;}
+.touchCtl button{
+  pointer-events:auto; position:absolute; bottom:16px; width:64px; height:64px; border-radius:50%;
+  border:3px solid rgba(255,255,255,.7); background:rgba(20,40,26,.55); color:#fff; font-size:26px;
+  font-family:inherit; font-weight:800; -webkit-tap-highlight-color:transparent;
+}
+#btnLeft{left:16px;} #btnRight{left:88px;} #btnJump{right:16px; width:76px; height:76px;}
+@media (min-width:900px){ .touchCtl{display:none;} }
+
+.smallNote{position:absolute; bottom:8px; left:50%; transform:translateX(-50%); font-size:11px; color:rgba(255,255,255,.7); font-weight:700;}
+</style>
+
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div class="hud">
+    <div class="phaseTag" id="phaseTag" hidden></div>
+    <div class="coins" id="coinHud" hidden><span class="coinDot"></span><span id="coinCount">0</span></div>
+    <div class="hearts" id="heartsHud" hidden></div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+  <div class="touchCtl" id="touchCtl" hidden>
+    <button id="btnLeft" aria-label="Esquerda">◀</button>
+    <button id="btnRight" aria-label="Direita">▶</button>
+    <button id="btnJump" aria-label="Pular">⤒</button>
+  </div>
+
+  <div class="overlay" id="startScreen">
+    <div class="panel">
+      <h1>🐊 Robô Jacaré</h1>
+      <p class="sub">Atravesse o rio e chegue à bandeira sem ser mordido pela boca do jacaré-robô!</p>
+      <label for="nameInput">Como você se chama?</label>
+      <input id="nameInput" maxlength="14" placeholder="Digite seu nome" autocomplete="off">
+      <label>Escolha seu personagem</label>
+      <div class="chars">
+        <button type="button" class="charCard" id="cardBoy" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Menino
+        </button>
+        <button type="button" class="charCard" id="cardGirl" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Menina
+        </button>
+      </div>
+      <button class="bigBtn" id="startBtn" disabled>Jogar</button>
+      <p class="hint">Setas ou A/D para andar, Espaço para pular. No celular, use os botões na tela.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="endScreen" hidden>
+    <div class="panel">
+      <h1 id="endTitle">Fim de jogo</h1>
+      <p class="sub" id="endMsg"></p>
+      <button class="bigBtn" id="retryBtn">Jogar de novo</button>
+    </div>
+  </div>
+
+  <div class="smallNote">Toque no jogo para começar a usar o teclado</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d');
+var W = 960, H = 540;
+var GRAVITY = 0.62, MOVE_SPEED = 3.6, JUMP_V = -12.8;
+
+// ---------- palette ----------
+var PAL = {
+  skyTop:'#bfe8ef', skyBot:'#eaf7e0',
+  hillFar:'#a9d8b0', hillNear:'#7fbd8a',
+  groundTop:'#5fa06b', groundTopEdge:'#3f7a4c', dirt:'#7a5230', dirtDeep:'#5c3c22',
+  trunk:'#6b4326', leaves:'#2f6b42', leavesLight:'#4a8a58',
+  cloud:'#ffffff',
+  jaw:'#3fae4f', jawDark:'#2f6b42', jawEdge:'#1c6b34', belly:'#eef9df',
+  gearBody:'#274a68', gearHub:'#c9d4d8', axleRod:'#8a5c37', dangerGlow:'rgba(230,57,70,0.28)',
+  flagPole:'#8a5c37', flagCloth:'#f6c445',
+  coin:'#f6c445', coinEdge:'#b9860f'
+};
+
+// ---------- sound effects (synthesized, no external files) ----------
+var audioCtx = null;
+function ensureAudio(){
+  if (!audioCtx){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
+  } else if (audioCtx.state === 'suspended'){
+    try { audioCtx.resume(); } catch(e){}
+  }
+  return audioCtx;
+}
+function tone(freq, t0, dur, type, vol, glideTo){
+  var ctxA = ensureAudio();
+  if (!ctxA) return;
+  var osc = ctxA.createOscillator();
+  var gain = ctxA.createGain();
+  osc.type = type || 'square';
+  var startAt = ctxA.currentTime + t0;
+  osc.frequency.setValueAtTime(freq, startAt);
+  if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, startAt + dur);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.linearRampToValueAtTime(vol, startAt + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+  osc.connect(gain); gain.connect(ctxA.destination);
+  osc.start(startAt);
+  osc.stop(startAt + dur + 0.03);
+}
+var SFX = {
+  coin: function(){
+    tone(880, 0, 0.09, 'square', 0.16);
+    tone(1320, 0.07, 0.13, 'square', 0.14);
+  },
+  bite: function(){
+    tone(220, 0, 0.16, 'sawtooth', 0.24, 80);
+    tone(150, 0.05, 0.14, 'square', 0.18, 60);
+  },
+  fall: function(){
+    tone(340, 0, 0.22, 'triangle', 0.14, 130);
+  },
+  levelComplete: function(){
+    tone(523.25, 0, 0.12, 'square', 0.16);
+    tone(659.25, 0.11, 0.12, 'square', 0.16);
+    tone(783.99, 0.22, 0.12, 'square', 0.16);
+    tone(1046.5, 0.33, 0.24, 'square', 0.2);
+  },
+  victory: function(){
+    tone(523.25, 0, 0.13, 'square', 0.17);
+    tone(659.25, 0.12, 0.13, 'square', 0.17);
+    tone(783.99, 0.24, 0.13, 'square', 0.17);
+    tone(1046.5, 0.36, 0.13, 'square', 0.17);
+    tone(1318.5, 0.49, 0.32, 'square', 0.22);
+  },
+  gameOver: function(){
+    tone(392, 0, 0.55, 'sawtooth', 0.2, 100);
+  }
+};
+
+// ---------- persisted prefs (shared across the robótica games) ----------
+var prefs = {};
+try { prefs = JSON.parse(localStorage.getItem('robotica_prefs') || localStorage.getItem('tocandira_prefs') || '{}'); } catch(e){ prefs = {}; }
+
+// ---------- character drawing (same as Tocandira, for a consistent hero) ----------
+function drawCharacter(c, x, y, scale, facing, walkPhase, jumping, hurt, kind){
+  c.save();
+  c.translate(x, y);
+  c.scale(facing * scale, scale);
+  var bob = jumping ? -4 : Math.sin(walkPhase) * 3;
+  var legSwing = jumping ? 0 : Math.sin(walkPhase) * 14;
+  var skin = '#f3c08c';
+  var hair = kind === 'girl' ? '#6b3d1f' : '#3d2414';
+  var shirt = hurt ? '#e0503f' : (kind === 'girl' ? '#e0507f' : '#2f7dbf');
+  var pants = kind === 'girl' ? '#e0507f' : '#33465c';
+
+  c.strokeStyle = pants; c.lineWidth = 7; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-5, -30); c.lineTo(-5 + legSwing*0.4, -2); c.stroke();
+  c.beginPath(); c.moveTo(5, -30); c.lineTo(5 - legSwing*0.4, -2); c.stroke();
+
+  c.fillStyle = shirt;
+  c.beginPath();
+  c.moveTo(-14, -30 + bob*0.3);
+  c.quadraticCurveTo(0, -40 + bob*0.3, 14, -30 + bob*0.3);
+  c.lineTo(12, -58 + bob*0.3);
+  c.quadraticCurveTo(0, -63 + bob*0.3, -12, -58 + bob*0.3);
+  c.closePath(); c.fill();
+
+  if (kind === 'girl'){
+    c.fillStyle = shirt;
+    c.beginPath(); c.moveTo(-14,-32); c.lineTo(-22,-14); c.lineTo(-10,-16); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(14,-32); c.lineTo(22,-14); c.lineTo(10,-16); c.closePath(); c.fill();
+  }
+
+  c.strokeStyle = skin; c.lineWidth = 6;
+  var armSwing = jumping ? -20 : -Math.sin(walkPhase) * 12;
+  c.beginPath(); c.moveTo(-12,-55); c.lineTo(-12 + armSwing*0.5, -36); c.stroke();
+  c.beginPath(); c.moveTo(12,-55); c.lineTo(12 - armSwing*0.5, -36); c.stroke();
+
+  c.fillStyle = skin;
+  c.beginPath(); c.arc(0, -70 + bob*0.4, 15, 0, Math.PI*2); c.fill();
+
+  c.fillStyle = hair;
+  if (kind === 'girl'){
+    c.beginPath(); c.arc(0, -73 + bob*0.4, 16, Math.PI, Math.PI*2.05); c.fill();
+    c.beginPath(); c.ellipse(-14, -62 + bob*0.4, 5, 10, 0.3, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(14, -62 + bob*0.4, 5, 10, -0.3, 0, Math.PI*2); c.fill();
+  } else {
+    c.beginPath(); c.arc(0, -75 + bob*0.4, 15.5, Math.PI*0.95, Math.PI*2.1); c.fill();
+  }
+
+  c.fillStyle = '#2a2016';
+  c.beginPath(); c.arc(-5, -70 + bob*0.4, 1.8, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.arc(5, -70 + bob*0.4, 1.8, 0, Math.PI*2); c.fill();
+  c.strokeStyle = '#c05a2e'; c.lineWidth = 1.6; c.beginPath();
+  c.arc(0, -66 + bob*0.4, 4, 0.15*Math.PI, 0.85*Math.PI); c.stroke();
+
+  c.restore();
+}
+
+function drawMiniPreview(canvasEl, kind){
+  var cc = canvasEl.getContext('2d');
+  cc.clearRect(0,0,80,96);
+  drawCharacter(cc, 40, 88, 1.35, 1, 0, false, false, kind);
+}
+drawMiniPreview(document.querySelector('#cardBoy canvas'), 'boy');
+drawMiniPreview(document.querySelector('#cardGirl canvas'), 'girl');
+
+// ---------- jacaré-robô drawing ----------
+// x,groundY = hinge position at ground level. open: 0 (closed) .. 1 (wide open).
+// gearAngle: current rotation of the motor gear (radians) — one full turn per open+close cycle.
+function drawJacare(c, x, groundY, open, gearAngle, danger){
+  c.save();
+  c.translate(x, groundY);
+
+  if (danger){
+    c.fillStyle = PAL.dangerGlow;
+    c.beginPath(); c.arc(30, -14, 46, 0, Math.PI*2); c.fill();
+  }
+
+  // motor + eixo indicator above the jacaré
+  c.save();
+  c.translate(-6, -78);
+  c.strokeStyle = PAL.axleRod; c.lineWidth = 3; c.setLineDash([4,5]);
+  c.beginPath(); c.moveTo(0,0); c.lineTo(0,50); c.stroke();
+  c.setLineDash([]);
+  c.save(); c.rotate(gearAngle);
+  c.fillStyle = PAL.gearBody;
+  c.beginPath(); c.arc(0,0,13,0,Math.PI*2); c.fill();
+  for (var g=0; g<6; g++){
+    c.save(); c.rotate(g*Math.PI/3); c.fillRect(-3,-17,6,6); c.restore();
+  }
+  c.fillStyle = PAL.gearHub; c.beginPath(); c.arc(0,0,5,0,Math.PI*2); c.fill();
+  c.restore();
+  c.restore();
+
+  // body (low, rounded, resting on ground)
+  c.fillStyle = PAL.jaw;
+  c.beginPath(); c.ellipse(-10, -14, 30, 16, 0, 0, Math.PI*2); c.fill();
+  c.fillStyle = PAL.jawDark;
+  c.beginPath(); c.ellipse(-20, -4, 7, 6, 0, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(2, -4, 7, 6, 0, 0, Math.PI*2); c.fill();
+
+  // lower jaw (fixed)
+  c.fillStyle = PAL.jaw;
+  c.beginPath();
+  c.moveTo(16,-16); c.lineTo(58,-11); c.lineTo(56,-5); c.lineTo(16,-7);
+  c.closePath(); c.fill();
+  c.fillStyle = '#fff';
+  for (var i=0;i<3;i++){
+    c.beginPath();
+    c.moveTo(24+i*10,-9); c.lineTo(27+i*10,-9); c.lineTo(25.5+i*10,-4);
+    c.closePath(); c.fill();
+  }
+
+  // upper jaw (hinged, rotates open)
+  c.save();
+  c.translate(16,-16);
+  c.rotate(-open*0.6);
+  c.fillStyle = PAL.jaw;
+  c.beginPath();
+  c.moveTo(0,0); c.lineTo(40,-7); c.lineTo(38,-1); c.lineTo(0,5);
+  c.closePath(); c.fill();
+  c.fillStyle = '#fff';
+  for (var j=0;j<3;j++){
+    c.beginPath();
+    c.moveTo(7+j*10,-1); c.lineTo(10+j*10,-1); c.lineTo(8.5+j*10,3);
+    c.closePath(); c.fill();
+  }
+  c.fillStyle = PAL.belly;
+  c.beginPath(); c.arc(6,-6,5.5,0,Math.PI*2); c.fill();
+  c.fillStyle = '#16232c';
+  c.beginPath(); c.arc(7,-7,2.4,0,Math.PI*2); c.fill();
+  c.restore();
+
+  c.restore();
+}
+
+// ---------- level data ----------
+function L(x,y,w,h){ return {x:x,y:y,w:w,h:h}; }
+var GY = 470; // ground surface baseline
+
+var LEVELS = [
+  {
+    name: 'FASE 1 — O JACARÉ APRENDIZ',
+    width: 1700,
+    platforms: [ L(0,GY,780,70), L(880,GY,820,70) ],
+    coins: [ [260,GY-30],[420,GY-30],[1100,GY-30],[1300,GY-30],[1500,GY-30] ],
+    jacares: [ { x:560, period:2600, phase:0, w:64, dangerAt:0.35 } ],
+    flag: { x:1620, y:GY-96 },
+    trees: [80,300,650,980,1250,1550],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 2 — DOIS JACARÉS NO CAMINHO',
+    width: 2100,
+    platforms: [ L(0,GY,560,70), L(660,GY,340,70), L(1100,GY-70,220,70), L(1400,GY,700,70) ],
+    coins: [ [200,GY-30],[760,GY-30],[1170,GY-100],[1780,GY-30],[1980,GY-30] ],
+    jacares: [
+      { x:420, period:2100, phase:0, w:64, dangerAt:0.35 },
+      { x:1560, period:1900, phase:600, w:64, dangerAt:0.4 }
+    ],
+    flag: { x:1980, y:GY-96 },
+    trees: [60,420,760,1050,1300,1650,1950],
+    bushes: [1780],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 3 — RITMO ACELERADO',
+    width: 2500,
+    platforms: [ L(0,GY,460,70), L(560,GY,260,70), L(920,GY-70,200,70), L(1220,GY,300,70), L(1620,GY-90,220,70), L(1940,GY,560,70) ],
+    coins: [ [180,GY-30],[1000,GY-100],[1280,GY-30],[1700,GY-120],[2200,GY-30] ],
+    jacares: [
+      { x:680, period:1500, phase:0, w:60, dangerAt:0.45 },
+      { x:1340, period:1350, phase:400, w:60, dangerAt:0.45 },
+      { x:2140, period:1250, phase:800, w:60, dangerAt:0.5 }
+    ],
+    flag: { x:2440, y:GY-96 },
+    trees: [40,500,860,1160,1560,1880,2380],
+    bushes: [2240,1720],
+    start: {x:60,y:GY-1}
+  }
+];
+
+// ---------- game state ----------
+var state = 'start'; // start | playing | banner | gameover | victory
+var player, jacares = [], coinsState = [], hearts = 3, coinCount = 0,
+    cameraX = 0, walkPhase = 0, bannerTimer = 0, toastTimer = 0, playerKind = 'boy', playerName = '';
+var levelIdx = 0;
+var keys = {left:false,right:false,jump:false};
+var firstDangerShown = false;
+resetPlayer(LEVELS[0]);
+
+function resetPlayer(lv){
+  player = { x:lv.start.x, y:lv.start.y - 66, w:22, h:66, vx:0, vy:0, onGround:false, invuln:0, facing:1 };
+}
+
+function loadLevel(i){
+  levelIdx = i;
+  var lv = LEVELS[i];
+  resetPlayer(lv);
+  jacares = lv.jacares.map(function(j){ return {x:j.x, period:j.period, t:j.phase||0, w:j.w, dangerAt:j.dangerAt, open:0}; });
+  coinsState = lv.coins.map(function(){ return false; });
+  cameraX = 0;
+  showBanner(lv.name, 1600);
+  state = 'playing';
+  document.getElementById('phaseTag').hidden = false;
+  document.getElementById('phaseTag').textContent = 'FASE ' + (i+1) + ' / ' + LEVELS.length;
+}
+
+function showBanner(text, ms){
+  var b = document.getElementById('banner');
+  b.textContent = text; b.hidden = false; bannerTimer = ms;
+}
+function showToast(text, ms){
+  var t = document.getElementById('toast');
+  t.textContent = text; t.hidden = false; toastTimer = ms;
+}
+
+function startGame(){
+  hearts = 3; coinCount = 0; firstDangerShown = false;
+  document.getElementById('heartsHud').hidden = false;
+  document.getElementById('coinHud').hidden = false;
+  updateHearts(); updateCoins();
+  loadLevel(0);
+  setTimeout(function(){
+    showToast('⚙️ Observe a engrenagem girando! Quando a boca do jacaré abrir bem, é a hora de passar correndo!', 4200);
+  }, 1700);
+}
+
+function updateHearts(){
+  var el = document.getElementById('heartsHud'); el.innerHTML = '';
+  for (var i=0;i<3;i++){
+    var full = i < hearts;
+    var svg = '<svg class="heart" viewBox="0 0 32 28"><path d="M16 26 C4 18 0 11 0 6.5 C0 2 4 0 7.5 0 C11 0 14 2 16 6 C18 2 21 0 24.5 0 C28 0 32 2 32 6.5 C32 11 28 18 16 26 Z" fill="' + (full? '#e0503f':'rgba(255,255,255,0.25)') + '" stroke="#7a1f16" stroke-width="1.5"/></svg>';
+    el.innerHTML += svg;
+  }
+}
+function updateCoins(){ document.getElementById('coinCount').textContent = coinCount; }
+
+// ---------- collision ----------
+function resolveVsPlatforms(e, rects){
+  e.onGround = false;
+  for (var i=0;i<rects.length;i++){
+    var r = rects[i];
+    if (e.x < r.x+r.w && e.x+e.w > r.x && e.y < r.y+r.h && e.y+e.h > r.y){
+      var oL = (e.x+e.w)-r.x, oR = (r.x+r.w)-e.x, oT = (e.y+e.h)-r.y, oB=(r.y+r.h)-e.y;
+      var minX = Math.min(oL,oR), minY = Math.min(oT,oB);
+      if (minY < minX){
+        if (oT < oB){ e.y = r.y - e.h; e.vy = 0; e.onGround = true; }
+        else { e.y = r.y + r.h; e.vy = 0; }
+      } else {
+        if (oL < oR){ e.x = r.x - e.w; } else { e.x = r.x + r.w; }
+        e.vx = 0;
+      }
+    }
+  }
+}
+function aabb(a,b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
+
+// ---------- update ----------
+function update(dt){
+  var lv = LEVELS[levelIdx];
+  if (state !== 'playing') return;
+
+  player.vx = 0;
+  if (keys.left){ player.vx = -MOVE_SPEED; player.facing = -1; }
+  if (keys.right){ player.vx = MOVE_SPEED; player.facing = 1; }
+  if (keys.jump && player.onGround){ player.vy = JUMP_V; player.onGround = false; }
+  player.vy += GRAVITY;
+  player.x += player.vx; resolveVsPlatforms(player, lv.platforms);
+  player.y += player.vy; resolveVsPlatforms(player, lv.platforms);
+  player.x = Math.max(0, Math.min(lv.width - player.w, player.x));
+  if (player.y > H + 100){ player.y = lv.start.y - 66; player.x = lv.start.x; player.vy = 0; SFX.fall(); }
+
+  if (player.invuln > 0) player.invuln--;
+
+  var pcx = player.x + player.w/2;
+  var nearAny = false;
+  for (var i=0;i<jacares.length;i++){
+    var j = jacares[i];
+    j.t += dt;
+    j.open = (Math.sin((j.t / j.period) * Math.PI*2) + 1) / 2;
+    var danger = j.open < j.dangerAt;
+    if (Math.abs(pcx - j.x) < 140) nearAny = true;
+
+    var box = { x:j.x - j.w/2, y:GY-56, w:j.w, h:56 };
+    if (danger && player.invuln<=0 && aabb(player, box)){
+      hearts--; updateHearts(); player.invuln = 90; SFX.bite();
+      player.vx = (pcx < j.x) ? -6 : 6; player.vy = -7;
+      if (hearts<=0){ gameOver(); return; }
+    }
+  }
+  if (nearAny && !firstDangerShown){
+    firstDangerShown = true;
+    showToast('🦷 Cuidado! Quando a boca está quase fechando, é perigoso — espere abrir de novo!', 3200);
+  }
+
+  lv.coins.forEach(function(cpos, i){
+    if (coinsState[i]) return;
+    var cbox = {x:cpos[0]-12,y:cpos[1]-12,w:24,h:24};
+    if (aabb(player, cbox)){ coinsState[i]=true; coinCount++; updateCoins(); SFX.coin(); }
+  });
+
+  var flagBox = { x:lv.flag.x, y:lv.flag.y, w:14, h:96 };
+  if (aabb(player, flagBox)){
+    if (levelIdx < LEVELS.length-1){
+      showBanner('FASE ' + (levelIdx+1) + ' CONCLUÍDA!', 1400);
+      SFX.levelComplete();
+      var next = levelIdx+1;
+      state = 'banner';
+      setTimeout(function(){ loadLevel(next); }, 1400);
+    } else {
+      victory();
+    }
+  }
+
+  cameraX = Math.max(0, Math.min(lv.width - W, pcx - W/2));
+  walkPhase += (Math.abs(player.vx)>0 && player.onGround) ? 0.35 : 0;
+
+  if (bannerTimer > 0){ bannerTimer -= dt; if (bannerTimer<=0) document.getElementById('banner').hidden = true; }
+  if (toastTimer > 0){ toastTimer -= dt; if (toastTimer<=0) document.getElementById('toast').hidden = true; }
+}
+
+function gameOver(){
+  state = 'gameover';
+  SFX.gameOver();
+  document.getElementById('endTitle').textContent = 'Ai! A boca fechou na hora errada!';
+  document.getElementById('endMsg').textContent = (playerName||'Cientista') + ', você chegou até a fase ' + (levelIdx+1) + '. Observe bem o giro da engrenagem antes de passar!';
+  document.getElementById('endScreen').hidden = false;
+}
+function victory(){
+  state = 'victory';
+  SFX.victory();
+  document.getElementById('endTitle').textContent = 'Você atravessou o rio dos jacarés!';
+  document.getElementById('endMsg').textContent = 'Parabéns, ' + (playerName||'Cientista') + '! Você aprendeu a ler o ritmo do motor: o giro da engrenagem passa pelo eixo e vira o movimento de abrir e fechar a boca — e você soube esperar a hora certa de passar! Moedas coletadas: ' + coinCount + '.';
+  document.getElementById('endScreen').hidden = false;
+}
+
+// ---------- draw ----------
+var DAY_SKY_GRAD = null;
+function drawBackground(){
+  if (!DAY_SKY_GRAD){
+    DAY_SKY_GRAD = ctx.createLinearGradient(0,0,0,H);
+    DAY_SKY_GRAD.addColorStop(0, PAL.skyTop); DAY_SKY_GRAD.addColorStop(1, PAL.skyBot);
+  }
+  ctx.fillStyle = DAY_SKY_GRAD; ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for (var i=0;i<5;i++){
+    var cx = ((i*260) - cameraX*0.15) % (W+260); if (cx < -140) cx += W+260;
+    cloud(cx, 60 + (i%3)*30, 1);
+  }
+  ctx.fillStyle = PAL.hillFar;
+  hillRow(cameraX*0.3, 300, 60);
+  ctx.fillStyle = PAL.hillNear;
+  hillRow(cameraX*0.55, 340, 46);
+}
+function cloud(x,y,s){
+  ctx.beginPath();
+  ctx.arc(x,y,18*s,0,Math.PI*2);
+  ctx.arc(x+20*s,y-8*s,15*s,0,Math.PI*2);
+  ctx.arc(x+36*s,y,17*s,0,Math.PI*2);
+  ctx.fill();
+}
+function hillRow(offset, y, amp){
+  ctx.beginPath(); ctx.moveTo(-offset%300-300, H);
+  for (var x=-300; x<W+300; x+=150){
+    ctx.quadraticCurveTo(x-offset%300+75, y-amp, x-offset%300+150, y);
+  }
+  ctx.lineTo(W+300,H); ctx.closePath(); ctx.fill();
+}
+function tree(x, groundY){
+  ctx.fillStyle = PAL.trunk; ctx.fillRect(x-7, groundY-70, 14, 70);
+  ctx.fillStyle = PAL.leaves;
+  ctx.beginPath(); ctx.arc(x, groundY-90, 34, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAL.leavesLight;
+  ctx.beginPath(); ctx.arc(x-12, groundY-100, 22, 0, Math.PI*2); ctx.fill();
+}
+function bush(x, groundY){
+  ctx.fillStyle = PAL.leaves;
+  ctx.beginPath(); ctx.ellipse(x, groundY-14, 34, 18, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAL.leavesLight;
+  ctx.beginPath(); ctx.ellipse(x-16, groundY-18, 18, 12, 0, 0, Math.PI*2); ctx.fill();
+}
+function drawFlag(f){
+  ctx.fillStyle = PAL.flagPole; ctx.fillRect(f.x, f.y, 6, 96);
+  ctx.fillStyle = PAL.flagCloth;
+  ctx.beginPath(); ctx.moveTo(f.x+6,f.y+4); ctx.lineTo(f.x+46,f.y+16); ctx.lineTo(f.x+6,f.y+30); ctx.closePath(); ctx.fill();
+}
+function drawPlatform(r){
+  ctx.fillStyle = PAL.dirtDeep; ctx.fillRect(r.x, r.y, r.w, Math.min(r.h, H-r.y+40));
+  ctx.fillStyle = PAL.dirt; ctx.fillRect(r.x, r.y, r.w, 14);
+  ctx.fillStyle = PAL.groundTop; ctx.fillRect(r.x, r.y-14, r.w, 14);
+  ctx.fillStyle = PAL.groundTopEdge; ctx.fillRect(r.x, r.y-14, r.w, 4);
+}
+
+var CULL_MARGIN = 90;
+function inView(x){ return x > cameraX - CULL_MARGIN && x < cameraX + W + CULL_MARGIN; }
+function render(){
+  var lv = LEVELS[levelIdx];
+  drawBackground();
+  ctx.save();
+  ctx.translate(-cameraX, 0);
+
+  lv.trees.forEach(function(tx){ if (inView(tx)) tree(tx, GY); });
+  lv.platforms.forEach(function(r){
+    if (r.x+r.w > cameraX-CULL_MARGIN && r.x < cameraX+W+CULL_MARGIN) drawPlatform(r);
+  });
+  if (lv.bushes) lv.bushes.forEach(function(bx){ if (inView(bx)) bush(bx, GY); });
+  if (inView(lv.flag.x)) drawFlag(lv.flag);
+
+  lv.coins.forEach(function(cpos,i){
+    if (coinsState[i]) return;
+    if (!inView(cpos[0])) return;
+    ctx.save(); ctx.translate(cpos[0], cpos[1] + Math.sin(performance.now()/220 + i)*4);
+    ctx.fillStyle = PAL.coin; ctx.strokeStyle = PAL.coinEdge; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  });
+
+  jacares.forEach(function(j){
+    if (!inView(j.x)) return;
+    var gearAngle = (j.t / j.period) * Math.PI*2;
+    drawJacare(ctx, j.x, GY, j.open, gearAngle, j.open < j.dangerAt);
+  });
+
+  if (state === 'playing' || state === 'banner'){
+    var hurt = player.invuln>0 && (Math.floor(player.invuln/6)%2===0);
+    drawCharacter(ctx, player.x + player.w/2, player.y + player.h, 1, player.facing, walkPhase, !player.onGround, hurt, playerKind);
+  }
+  ctx.restore();
+}
+
+// ---------- loop ----------
+var lastT = 0;
+function loop(t){
+  var dt = Math.min(40, t-lastT || 16); lastT = t;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ---------- input ----------
+window.addEventListener('keydown', function(e){
+  if (['ArrowLeft','a','A'].indexOf(e.key)>-1) keys.left = true;
+  if (['ArrowRight','d','D'].indexOf(e.key)>-1) keys.right = true;
+  if ([' ','ArrowUp','w','W'].indexOf(e.key)>-1){ keys.jump = true; e.preventDefault(); }
+});
+window.addEventListener('keyup', function(e){
+  if (['ArrowLeft','a','A'].indexOf(e.key)>-1) keys.left = false;
+  if (['ArrowRight','d','D'].indexOf(e.key)>-1) keys.right = false;
+  if ([' ','ArrowUp','w','W'].indexOf(e.key)>-1) keys.jump = false;
+});
+function bindHold(el, onFlag){
+  var set = function(v){ return function(ev){ ev.preventDefault(); onFlag(v); }; };
+  el.addEventListener('touchstart', set(true), {passive:false});
+  el.addEventListener('touchend', set(false), {passive:false});
+  el.addEventListener('mousedown', set(true));
+  el.addEventListener('mouseup', set(false));
+  el.addEventListener('mouseleave', set(false));
+}
+bindHold(document.getElementById('btnLeft'), function(v){ keys.left = v; });
+bindHold(document.getElementById('btnRight'), function(v){ keys.right = v; });
+bindHold(document.getElementById('btnJump'), function(v){ keys.jump = v; });
+document.getElementById('touchCtl').hidden = false;
+
+// ---------- start screen wiring ----------
+var chosenKind = prefs.kind || null;
+var cardBoy = document.getElementById('cardBoy'), cardGirl = document.getElementById('cardGirl');
+var nameInput = document.getElementById('nameInput');
+var startBtn = document.getElementById('startBtn');
+if (prefs.name) nameInput.value = prefs.name;
+
+function refreshCards(){
+  cardBoy.setAttribute('aria-pressed', chosenKind==='boy');
+  cardGirl.setAttribute('aria-pressed', chosenKind==='girl');
+  refreshStart();
+}
+function refreshStart(){
+  startBtn.disabled = !(chosenKind && nameInput.value.trim().length>0);
+}
+cardBoy.addEventListener('click', function(){ chosenKind='boy'; refreshCards(); });
+cardGirl.addEventListener('click', function(){ chosenKind='girl'; refreshCards(); });
+if (chosenKind) refreshCards();
+nameInput.addEventListener('input', refreshStart);
+
+startBtn.addEventListener('click', function(){
+  ensureAudio();
+  playerKind = chosenKind; playerName = nameInput.value.trim().slice(0,14);
+  try { localStorage.setItem('robotica_prefs', JSON.stringify({kind:playerKind, name:playerName})); } catch(e){}
+  document.getElementById('startScreen').hidden = true;
+  walkPhase = 0;
+  startGame();
+});
+document.getElementById('retryBtn').addEventListener('click', function(){
+  ensureAudio();
+  document.getElementById('endScreen').hidden = true;
+  walkPhase = 0;
+  startGame();
+});
+
+requestAnimationFrame(loop);
+})();
+</script>
