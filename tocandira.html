@@ -400,21 +400,130 @@ var LEVELS = [
     start: {x:60,y:GY-1}
   },
   {
-    name: 'FASE 4 — A FLORESTA À NOITE',
+    name: 'FASE 4 — REFORÇOS NA FLORESTA',
+    width: 2600,
+    platforms: [ L(0,GY,420,70), L(540,GY,280,70), L(900,GY-70,220,70), L(1200,GY,260,70), L(1540,GY-90,240,70), L(1860,GY,300,70), L(2240,GY,360,70) ],
+    coins: [ [200,GY-30],[680,GY-30],[1000,GY-110],[1660,GY-120],[1980,GY-30],[2420,GY-30] ],
+    ants: [
+      { x:600, min:540, max:700, speed:1.1 },
+      { x:1400, min:1300, max:1500, speed:1.15 },
+      { x:2100, min:2000, max:2200, speed:1.2 }
+    ],
+    nest: { x:2460, y:GY-50, w:150, h:50, alarmR:200 },
+    flag: { x:2560, y:GY-96 },
+    trees: [60,480,860,1180,1580,1900,2280,2500],
+    bushes: [2400],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 5 — A TARDE ESFRIA',
+    width: 2700,
+    dusk: 0.3,
+    platforms: [ L(0,GY,400,70), L(520,GY,260,70), L(860,GY-70,200,70), L(1140,GY,260,70), L(1480,GY-90,220,70), L(1780,GY,260,70), L(2120,GY-60,240,70), L(2440,GY,260,70) ],
+    coins: [ [180,GY-30],[660,GY-30],[980,GY-110],[1600,GY-120],[2040,GY-90],[2360,GY-30] ],
+    ants: [
+      { x:600, min:540, max:700, speed:1.15 },
+      { x:1280, min:1200, max:1380, speed:1.2 },
+      { x:1980, min:1900, max:2080, speed:1.25 }
+    ],
+    nest: { x:2560, y:GY-50, w:150, h:50, alarmR:200 },
+    flag: { x:2660, y:GY-96 },
+    trees: [50,460,800,1120,1440,1760,2100,2420,2600],
+    bushes: [1700,2500],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 6 — SOMBRAS COMPRIDAS',
+    width: 2800,
+    dusk: 0.6,
+    platforms: [ L(0,GY,380,70), L(500,GY,240,70), L(820,GY-80,220,70), L(1120,GY,240,70), L(1440,GY-90,220,70), L(1740,GY,240,70), L(2060,GY-70,220,70), L(2360,GY,440,70) ],
+    coins: [ [160,GY-30],[620,GY-30],[900,GY-120],[1540,GY-130],[1860,GY-30],[2200,GY-110],[2600,GY-30] ],
+    ants: [
+      { x:580, min:520, max:680, speed:1.2 },
+      { x:1220, min:1150, max:1350, speed:1.25 },
+      { x:1860, min:1780, max:1960, speed:1.3 },
+      { x:2500, min:2420, max:2620, speed:1.3 }
+    ],
+    nest: { x:2680, y:GY-50, w:150, h:50, alarmR:210 },
+    flag: { x:2760, y:GY-96 },
+    trees: [40,440,780,1100,1420,1740,2080,2400,2680],
+    bushes: [1980,2560],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 7 — QUASE ANOITECENDO',
+    width: 2900,
+    dusk: 1.0,
+    platforms: [ L(0,GY,360,70), L(480,GY,220,70), L(780,GY-80,200,70), L(1060,GY,220,70), L(1360,GY-100,200,70), L(1640,GY,220,70), L(1940,GY-80,220,70), L(2240,GY,220,70), L(2540,GY,360,70) ],
+    coins: [ [160,GY-30],[580,GY-30],[860,GY-130],[1440,GY-140],[1720,GY-30],[2020,GY-120],[2320,GY-30],[2680,GY-30] ],
+    ants: [
+      { x:560, min:500, max:660, speed:1.25 },
+      { x:1140, min:1070, max:1270, speed:1.3 },
+      { x:1720, min:1650, max:1830, speed:1.3 },
+      { x:2320, min:2250, max:2450, speed:1.35 }
+    ],
+    nest: { x:2760, y:GY-50, w:150, h:50, alarmR:220 },
+    flag: { x:2860, y:GY-96 },
+    trees: [40,420,740,1040,1340,1620,1920,2220,2520,2800],
+    bushes: [2080,2660],
+    fireflies: [900,1500,2100,2700],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 8 — A FLORESTA À NOITE',
     width: 2300,
     night: true,
     platforms: [ L(0,GY,520,70), L(620,GY,260,70), L(980,GY-80,200,70), L(1280,GY,320,70), L(1700,GY-60,220,70), L(2000,GY,300,70) ],
     coins: [ [220,GY-30],[700,GY-30],[1060,GY-110],[1420,GY-30],[1780,GY-90],[2120,GY-30] ],
     ants: [
-      { x:440, min:360, max:560, speed:1.0 },
-      { x:1180, min:1100, max:1360, speed:1.1 },
-      { x:1900, min:1820, max:2020, speed:1.2 }
+      { x:440, min:360, max:560, speed:1.2 },
+      { x:1180, min:1100, max:1360, speed:1.3 },
+      { x:1900, min:1820, max:2020, speed:1.35 }
     ],
     nest: { x:2060, y:GY-50, w:150, h:50, alarmR:210 },
     flag: { x:2220, y:GY-96 },
     trees: [40,460,760,1080,1460,1780,2080],
     bushes: [1980],
     fireflies: [160,340,600,900,1240,1520,1840,2140],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 9 — CAÇADA NOTURNA',
+    width: 2700,
+    night: true,
+    platforms: [ L(0,GY,400,70), L(520,GY,240,70), L(840,GY-80,220,70), L(1140,GY,240,70), L(1460,GY-90,220,70), L(1760,GY,240,70), L(2080,GY-70,220,70), L(2380,GY,320,70) ],
+    coins: [ [180,GY-30],[640,GY-30],[940,GY-120],[1580,GY-130],[1900,GY-30],[2220,GY-110],[2560,GY-30] ],
+    ants: [
+      { x:600, min:540, max:700, speed:1.35 },
+      { x:1240, min:1170, max:1370, speed:1.4 },
+      { x:1880, min:1800, max:1980, speed:1.4 },
+      { x:2500, min:2420, max:2620, speed:1.45 }
+    ],
+    nest: { x:2600, y:GY-50, w:150, h:50, alarmR:220 },
+    flag: { x:2680, y:GY-96 },
+    trees: [40,440,780,1100,1420,1740,2060,2380,2620],
+    bushes: [1960,2540],
+    fireflies: [200,700,1300,1900,2400],
+    start: {x:60,y:GY-1}
+  },
+  {
+    name: 'FASE 10 — A ÚLTIMA TOCA',
+    width: 2900,
+    night: true,
+    platforms: [ L(0,GY,360,70), L(480,GY,220,70), L(780,GY-90,200,70), L(1060,GY,220,70), L(1360,GY-100,200,70), L(1640,GY,220,70), L(1940,GY-90,220,70), L(2240,GY,220,70), L(2540,GY,360,70) ],
+    coins: [ [160,GY-30],[580,GY-30],[860,GY-140],[1440,GY-150],[1720,GY-30],[2020,GY-130],[2320,GY-30],[2680,GY-30] ],
+    ants: [
+      { x:560, min:500, max:660, speed:1.4 },
+      { x:1140, min:1070, max:1270, speed:1.45 },
+      { x:1720, min:1650, max:1830, speed:1.5 },
+      { x:2100, min:2030, max:2200, speed:1.5 },
+      { x:2600, min:2530, max:2720, speed:1.55 }
+    ],
+    nest: { x:2760, y:GY-50, w:160, h:50, alarmR:230 },
+    flag: { x:2860, y:GY-96 },
+    trees: [40,420,740,1040,1340,1620,1920,2220,2520,2800],
+    bushes: [2080,2660],
+    fireflies: [300,900,1500,2100,2700],
     start: {x:60,y:GY-1}
   }
 ];
@@ -596,11 +705,14 @@ function victory(){
 }
 
 // ---------- draw ----------
+var DAY_SKY_GRAD = null, NIGHT_SKY_GRAD = null;
 function drawBackground(lv){
   if (lv.night){ drawNightSky(); return; }
-  var g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, PAL.skyTop); g.addColorStop(1, PAL.skyBot);
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  if (!DAY_SKY_GRAD){
+    DAY_SKY_GRAD = ctx.createLinearGradient(0,0,0,H);
+    DAY_SKY_GRAD.addColorStop(0, PAL.skyTop); DAY_SKY_GRAD.addColorStop(1, PAL.skyBot);
+  }
+  ctx.fillStyle = DAY_SKY_GRAD; ctx.fillRect(0,0,W,H);
 
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   for (var i=0;i<5;i++){
@@ -614,9 +726,11 @@ function drawBackground(lv){
 }
 var STAR_SEEDS = (function(){ var a=[]; for (var i=0;i<38;i++){ a.push({x:(i*53.7)%W, y:(i*29.3)%230+10, r:1+((i*7)%3), ph:i*1.7}); } return a; })();
 function drawNightSky(){
-  var g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, PAL.nightSkyTop); g.addColorStop(1, PAL.nightSkyBot);
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  if (!NIGHT_SKY_GRAD){
+    NIGHT_SKY_GRAD = ctx.createLinearGradient(0,0,0,H);
+    NIGHT_SKY_GRAD.addColorStop(0, PAL.nightSkyTop); NIGHT_SKY_GRAD.addColorStop(1, PAL.nightSkyBot);
+  }
+  ctx.fillStyle = NIGHT_SKY_GRAD; ctx.fillRect(0,0,W,H);
 
   ctx.save();
   ctx.fillStyle = PAL.moon;
@@ -643,6 +757,7 @@ function drawFireflies(lv){
   if (!lv.fireflies) return;
   var t = performance.now()/500;
   lv.fireflies.forEach(function(fx, i){
+    if (fx < cameraX - 100 || fx > cameraX + W + 100) return;
     var fy = GY - 90 + Math.sin(t + i*1.3) * 26;
     var x = fx + Math.cos(t*0.6 + i) * 14;
     var glow = 0.5 + 0.5*Math.sin(t*1.6 + i*2.1);
@@ -710,13 +825,11 @@ function drawFlag(f){
   ctx.fillStyle = PAL.flagCloth;
   ctx.beginPath(); ctx.moveTo(f.x+6,f.y+4); ctx.lineTo(f.x+46,f.y+16); ctx.lineTo(f.x+6,f.y+30); ctx.closePath(); ctx.fill();
 }
-function drawGround(lv){
-  lv.platforms.forEach(function(r){
-    ctx.fillStyle = PAL.dirtDeep; ctx.fillRect(r.x, r.y, r.w, Math.min(r.h, H-r.y+40));
-    ctx.fillStyle = PAL.dirt; ctx.fillRect(r.x, r.y, r.w, 14);
-    ctx.fillStyle = PAL.groundTop; ctx.fillRect(r.x, r.y-14, r.w, 14);
-    ctx.fillStyle = PAL.groundTopEdge; ctx.fillRect(r.x, r.y-14, r.w, 4);
-  });
+function drawPlatform(r){
+  ctx.fillStyle = PAL.dirtDeep; ctx.fillRect(r.x, r.y, r.w, Math.min(r.h, H-r.y+40));
+  ctx.fillStyle = PAL.dirt; ctx.fillRect(r.x, r.y, r.w, 14);
+  ctx.fillStyle = PAL.groundTop; ctx.fillRect(r.x, r.y-14, r.w, 14);
+  ctx.fillStyle = PAL.groundTopEdge; ctx.fillRect(r.x, r.y-14, r.w, 4);
 }
 
 function drawLantern(px, py, facing){
@@ -734,28 +847,33 @@ function drawLantern(px, py, facing){
   ctx.beginPath(); ctx.arc(bx, by-4, 5, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
+var CULL_MARGIN = 90;
+function inView(x){ return x > cameraX - CULL_MARGIN && x < cameraX + W + CULL_MARGIN; }
 function render(){
   var lv = LEVELS[levelIdx];
   drawBackground(lv);
   ctx.save();
   ctx.translate(-cameraX, 0);
 
-  lv.trees.forEach(function(tx){ tree(tx, GY); });
+  lv.trees.forEach(function(tx){ if (inView(tx)) tree(tx, GY); });
   if (lv.fireflies) drawFireflies(lv);
-  drawGround(lv);
-  if (lv.bushes) lv.bushes.forEach(function(bx){ bush(bx, GY); });
-  drawNest(lv.nest);
-  drawFlag(lv.flag);
+  lv.platforms.forEach(function(r){
+    if (r.x+r.w > cameraX-CULL_MARGIN && r.x < cameraX+W+CULL_MARGIN) drawPlatform(r);
+  });
+  if (lv.bushes) lv.bushes.forEach(function(bx){ if (inView(bx)) bush(bx, GY); });
+  if (inView(lv.nest.x)) drawNest(lv.nest);
+  if (inView(lv.flag.x)) drawFlag(lv.flag);
 
   lv.coins.forEach(function(cpos,i){
     if (coinsState[i]) return;
+    if (!inView(cpos[0])) return;
     ctx.save(); ctx.translate(cpos[0], cpos[1] + Math.sin(performance.now()/220 + i)*4);
     ctx.fillStyle = PAL.coin; ctx.strokeStyle = PAL.coinEdge; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.restore();
   });
 
-  ants.forEach(function(a){ drawAnt(ctx, a.x, GY, 1, (Math.sin(a.walk)>=0?1:1), a.walk, a.state); });
+  ants.forEach(function(a){ if (inView(a.x)) drawAnt(ctx, a.x, GY, 1, (Math.sin(a.walk)>=0?1:1), a.walk, a.state); });
 
   if (state === 'playing' || state === 'banner'){
     var hurt = player.invuln>0 && (Math.floor(player.invuln/6)%2===0);
@@ -764,6 +882,9 @@ function render(){
   }
   if (lv.night){
     ctx.fillStyle = 'rgba(8,14,30,0.4)';
+    ctx.fillRect(cameraX-50, -50, W+100, H+100);
+  } else if (lv.dusk){
+    ctx.fillStyle = 'rgba(20,20,40,' + (0.15 + 0.1*lv.dusk) + ')';
     ctx.fillRect(cameraX-50, -50, W+100, H+100);
   }
   ctx.restore();

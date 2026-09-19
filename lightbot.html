@@ -154,11 +154,11 @@ label{display:block; text-align:left; font-weight:700; font-size:14px; color:var
           ANDAR
         </button>
         <button class="cmdBtn" id="btnL" type="button">
-          <svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 0 19 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L5 4 Z" fill="#e0803a"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 5.5 A6.5 6.5 0 1 0 18.5 12" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M18.5 6 L15 13 L22 13 Z" fill="#e0803a"/></svg>
           ESQUERDA
         </button>
         <button class="cmdBtn" id="btnR" type="button">
-          <svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 1 5 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L19 4 Z" fill="#e0803a"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 5.5 A6.5 6.5 0 1 1 5.5 12" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M5.5 6 L2 13 L9 13 Z" fill="#e0803a"/></svg>
           DIREITA
         </button>
       </div>
@@ -329,30 +329,48 @@ drawMiniPreview(document.querySelector('#cardGirl canvas'), 'girl');
 
 // ---------- levels ----------
 // dir: 0=up(-row) 1=right(+col) 2=down(+row) 3=left(-col)
-var LEVELS = [
-  {
-    name: 'FASE 1 — PRIMEIRO PROGRAMA',
-    cols:5, rows:4,
-    start:{col:0,row:3,dir:0},
-    target:{col:0,row:0},
-    walls:[]
-  },
-  {
-    name: 'FASE 2 — VIRANDO O ROBÔ',
-    cols:5, rows:4,
-    start:{col:0,row:3,dir:0},
-    target:{col:4,row:0},
-    walls:[]
-  },
-  {
-    name: 'FASE 3 — DESVIE DO OBSTÁCULO',
-    cols:6, rows:5,
-    start:{col:0,row:4,dir:0},
-    target:{col:3,row:0},
-    walls:[[0,1],[0,0],[4,2],[5,2]]
+// Levels are built from a hand-authored solution PATH: the target is derived by
+// simulating that path, so a level can never accidentally ship unsolvable.
+var LB_DC = [0,1,0,-1], LB_DR = [-1,0,1,0];
+function buildLevel(cfg){
+  var col=cfg.start.col, row=cfg.start.row, dir=cfg.start.dir;
+  var visited = [[col,row]];
+  for (var i=0;i<cfg.path.length;i++){
+    var cmd = cfg.path[i];
+    if (cmd === 'L') dir = (dir+3)%4;
+    else if (cmd === 'R') dir = (dir+1)%4;
+    else if (cmd === 'F'){ col += LB_DC[dir]; row += LB_DR[dir]; visited.push([col,row]); }
   }
+  var walls = (cfg.decoys||[]).filter(function(w){
+    if (w[0]<0 || w[1]<0 || w[0]>=cfg.cols || w[1]>=cfg.rows) return false;
+    return !visited.some(function(v){ return v[0]===w[0] && v[1]===w[1]; });
+  });
+  return {
+    name: cfg.name, cols: cfg.cols, rows: cfg.rows, start: cfg.start,
+    target: {col:col, row:row}, walls: walls, nightAmt: cfg.nightAmt || 0, _path: cfg.path
+  };
+}
+var LEVELS = [
+  buildLevel({ name:'FASE 1 — PRIMEIRO PROGRAMA', cols:5, rows:4, start:{col:0,row:3,dir:0}, path:'FFF' }),
+  buildLevel({ name:'FASE 2 — VIRANDO O ROBÔ', cols:5, rows:4, start:{col:0,row:3,dir:0}, path:'FFFRFFFF' }),
+  buildLevel({ name:'FASE 3 — DESVIE DO OBSTÁCULO', cols:6, rows:5, start:{col:0,row:4,dir:0}, path:'FFRFFFLFF',
+    decoys:[[0,1],[0,0],[4,2],[5,2]] }),
+  buildLevel({ name:'FASE 4 — DOIS DESVIOS', cols:7, rows:5, start:{col:0,row:4,dir:0}, path:'FRFFLFFRFF',
+    decoys:[[0,0],[0,1],[6,4],[6,3]] }),
+  buildLevel({ name:'FASE 5 — CAMINHO MAIS LONGO', cols:7, rows:6, start:{col:0,row:5,dir:0}, path:'FFRFFFLFFF',
+    decoys:[[0,0],[0,1],[6,5],[6,4],[6,3]] }),
+  buildLevel({ name:'FASE 6 — O SOL ESTÁ SE PONDO', cols:7, rows:6, start:{col:0,row:5,dir:0}, path:'FRFFFLFFRFF',
+    decoys:[[0,3],[0,4],[6,0],[6,1]], nightAmt:0.4 }),
+  buildLevel({ name:'FASE 7 — PRIMEIRA NOITE', cols:8, rows:6, start:{col:0,row:5,dir:0}, path:'FFRFFFLFFFRFF',
+    decoys:[[0,0],[0,1],[7,5],[7,4],[3,5]], nightAmt:0.75 }),
+  buildLevel({ name:'FASE 8 — NA ESCURIDÃO', cols:8, rows:7, start:{col:0,row:6,dir:0}, path:'FRFFLFFFRFFLFF',
+    decoys:[[0,0],[0,1],[7,6],[7,5],[4,0]], nightAmt:0.88 }),
+  buildLevel({ name:'FASE 9 — CAMINHO NOTURNO', cols:9, rows:7, start:{col:0,row:6,dir:0}, path:'FFRFFFLFFRFFFLFF',
+    decoys:[[0,0],[8,6],[8,5],[4,6],[4,5]], nightAmt:0.95 }),
+  buildLevel({ name:'FASE 10 — O ÚLTIMO PROGRAMA', cols:9, rows:8, start:{col:0,row:7,dir:0}, path:'FRFFFLFFFRFFLFFFRF',
+    decoys:[[0,0],[0,1],[8,7],[8,6],[4,7],[4,4]], nightAmt:1.0 })
 ];
-var MAX_CMDS = 12;
+var MAX_CMDS = 20;
 
 // ---------- state ----------
 var levelIdx = 0;
@@ -382,6 +400,7 @@ function resetBot(lv){
 function loadLevel(i){
   levelIdx = i;
   var lv = LEVELS[i];
+  CELL = Math.min(78, 720/lv.cols, 460/lv.rows);
   resetBot(lv);
   program = [];
   execState = 'edit';
@@ -389,6 +408,11 @@ function loadLevel(i){
   showBanner(lv.name, 1500);
   document.getElementById('phaseTag').hidden = false;
   document.getElementById('phaseTag').textContent = 'FASE ' + (i+1) + ' / ' + LEVELS.length;
+  if (lv.nightAmt >= 0.7){
+    setTimeout(function(){
+      showToast('🔦 Está escuro, mas a lâmpada brilha mais forte pra te guiar!', 3400);
+    }, 1700);
+  }
 }
 
 function showBanner(text, ms){
@@ -415,8 +439,8 @@ function updateStars(){ document.getElementById('starCount').textContent = stars
 // ---------- queue UI ----------
 var CMD_ICON = {
   F: '<svg viewBox="0 0 24 24"><path d="M12 3 L19 12 H14.5 V21 H9.5 V12 H5 Z" fill="#1f7fd1"/></svg>',
-  L: '<svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 0 19 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L5 4 Z" fill="#e0803a"/></svg>',
-  R: '<svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 1 5 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L19 4 Z" fill="#e0803a"/></svg>'
+  L: '<svg viewBox="0 0 24 24"><path d="M12 5.5 A6.5 6.5 0 1 0 18.5 12" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M18.5 6 L15 13 L22 13 Z" fill="#e0803a"/></svg>',
+  R: '<svg viewBox="0 0 24 24"><path d="M12 5.5 A6.5 6.5 0 1 1 5.5 12" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M5.5 6 L2 13 L9 13 Z" fill="#e0803a"/></svg>'
 };
 function updateQueueUI(){
   var box = document.getElementById('queueBox');
@@ -442,6 +466,8 @@ function undoCmd(){
 function clearCmds(){
   if (execState === 'running') return;
   program = [];
+  resetBot(LEVELS[levelIdx]);
+  execState = 'edit';
   updateQueueUI();
 }
 
@@ -508,29 +534,53 @@ function victory(){
 }
 
 // ---------- draw ----------
+function mixHex(h1,h2,t){
+  var c1=parseInt(h1.slice(1),16), c2=parseInt(h2.slice(1),16);
+  var r1=(c1>>16)&255,g1=(c1>>8)&255,b1=c1&255;
+  var r2=(c2>>16)&255,g2=(c2>>8)&255,b2=c2&255;
+  var r=Math.round(r1+(r2-r1)*t), g=Math.round(g1+(g2-g1)*t), b=Math.round(b1+(b2-b1)*t);
+  return 'rgb('+r+','+g+','+b+')';
+}
 function drawBoard(lv){
   var o = levelOrigin(lv);
-  ctx.fillStyle = '#0f2a4a';
+  var amt = lv.nightAmt || 0;
+  ctx.fillStyle = mixHex('#0f2a4a', '#040810', amt);
   ctx.fillRect(0,0,W,H);
+  if (amt > 0.15){
+    ctx.fillStyle = 'rgba(255,255,255,'+(0.25*amt).toFixed(2)+')';
+    for (var s=0;s<Math.round(24*amt);s++){
+      var sx = (s*97)%W, sy = (s*53)%300+10;
+      ctx.beginPath(); ctx.arc(sx,sy,1.4,0,Math.PI*2); ctx.fill();
+    }
+  }
+  var boardCol = mixHex(PAL.board, '#1a2740', amt);
+  var boardShadowCol = mixHex(PAL.boardShadow, '#0e1830', amt);
+  var wallCol = mixHex(PAL.wall, '#2a3444', amt);
+  var wallTopCol = mixHex(PAL.wallTop, '#3a4658', amt);
+  var wallEdgeCol = mixHex(PAL.wallEdge, '#161c28', amt);
   for (var r=0;r<lv.rows;r++){
     for (var c=0;c<lv.cols;c++){
       var x = o.x + c*CELL, y = o.y + r*CELL;
       var wall = isWall(lv,c,r);
       if (wall){
-        ctx.fillStyle = PAL.wallEdge; ctx.fillRect(x+3,y+3,CELL-6,CELL-6+8);
-        ctx.fillStyle = PAL.wall; ctx.fillRect(x+3,y+3,CELL-6,CELL-6);
-        ctx.fillStyle = PAL.wallTop; ctx.fillRect(x+7,y+7,CELL-14,10);
+        ctx.fillStyle = wallEdgeCol; ctx.fillRect(x+3,y+3,CELL-6,CELL-6+8);
+        ctx.fillStyle = wallCol; ctx.fillRect(x+3,y+3,CELL-6,CELL-6);
+        ctx.fillStyle = wallTopCol; ctx.fillRect(x+7,y+7,CELL-14,10);
       } else {
-        ctx.fillStyle = PAL.boardShadow; ctx.fillRect(x+2,y+4,CELL-4,CELL-4);
-        ctx.fillStyle = PAL.board; ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+        ctx.fillStyle = boardShadowCol; ctx.fillRect(x+2,y+4,CELL-4,CELL-4);
+        ctx.fillStyle = boardCol; ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
         ctx.strokeStyle = PAL.boardEdge; ctx.lineWidth=1; ctx.strokeRect(x+2,y+2,CELL-4,CELL-4);
       }
     }
   }
-  // target tile
+  // target tile — glows brighter as it gets darker, guiding the way
   var tx = o.x + lv.target.col*CELL + CELL/2, ty = o.y + lv.target.row*CELL + CELL/2;
   ctx.fillStyle = PAL.targetGlow;
-  ctx.beginPath(); ctx.arc(tx,ty,CELL*0.55,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(tx,ty,CELL*(0.55+amt*0.35),0,Math.PI*2); ctx.fill();
+  if (amt > 0.4){
+    ctx.fillStyle = 'rgba(255,224,103,'+(0.18*amt).toFixed(2)+')';
+    ctx.beginPath(); ctx.arc(tx,ty,CELL*(0.95+amt*0.5),0,Math.PI*2); ctx.fill();
+  }
   drawBulb(tx,ty, bot && bot.col===lv.target.col && bot.row===lv.target.row && bot.lit);
 }
 function drawBulb(x,y,lit){
@@ -550,8 +600,18 @@ function render(){
   if (!lv || !bot) return;
   drawBoard(lv);
   var o = levelOrigin(lv);
-  var x = o.x + bot.col*CELL + CELL/2, y = o.y + bot.row*CELL + CELL/2 + 6;
-  drawRobotChar(ctx, x, y, 1, playerKind, bot.dir, execState==='running');
+  var scale = CELL/78;
+  var x = o.x + bot.col*CELL + CELL/2, y = o.y + bot.row*CELL + CELL/2 + 6*scale;
+  if (lv.nightAmt > 0.3){
+    ctx.save();
+    var grad = ctx.createRadialGradient(x,y-20*scale,4, x,y-20*scale,70*scale);
+    grad.addColorStop(0, 'rgba(255,240,180,'+(0.35*lv.nightAmt).toFixed(2)+')');
+    grad.addColorStop(1, 'rgba(255,240,180,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x,y-20*scale,70*scale,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  drawRobotChar(ctx, x, y, scale, playerKind, bot.dir, execState==='running');
 
   if (bannerTimer > 0){ bannerTimer -= 16; if (bannerTimer<=0) document.getElementById('banner').hidden = true; }
   if (toastTimer > 0){ toastTimer -= 16; if (toastTimer<=0) document.getElementById('toast').hidden = true; }
