@@ -1,0 +1,604 @@
+<title>Light Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky-deep:#0f2a4a;
+  --sky:#123a63;
+  --panel:#fbf3df;
+  --panel-edge:#c9a35c;
+  --ink:#182634;
+  --ink-soft:#556173;
+  --board:#dfe9f2;
+  --board-edge:#a9bdd1;
+  --wall:#6b7d92;
+  --wall-top:#8b9db2;
+  --accent:#1f7fd1;
+  --accent-dark:#123f74;
+  --ok:#3f9457;
+  --danger:#d64a3a;
+  --cmd-bg:#e7f0f8;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--sky-deep); color:var(--ink);
+  font-family:'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; padding-inline:16px; padding-block:12px;
+}
+#stage{
+  position:relative; width:100%; max-width:1040px;
+  aspect-ratio:16/9; border-radius:22px; overflow:hidden;
+  box-shadow:0 0 0 6px var(--accent-dark), 0 18px 50px rgba(0,0,0,.5);
+  background:linear-gradient(var(--sky), var(--sky-deep));
+}
+#game{position:absolute; inset:0; width:100%; height:100%; display:block;}
+
+.overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(rgba(8,20,36,.72), rgba(8,20,36,.86));
+  padding:20px; text-align:center;
+}
+.overlay[hidden]{display:none!important;}
+
+.panel{
+  background:var(--panel); border:4px solid var(--panel-edge); border-radius:20px;
+  padding:22px 26px; max-width:92%; width:520px; box-shadow:0 10px 0 rgba(0,0,0,.25);
+}
+h1{
+  margin:0 0 4px; font-size:clamp(28px,6vw,44px); color:var(--accent-dark);
+  text-shadow:0 3px 0 rgba(0,0,0,.12); text-wrap:balance;
+}
+.sub{margin:0 0 18px; color:var(--ink-soft); font-weight:600; font-size:15px;}
+
+label{display:block; text-align:left; font-weight:700; font-size:14px; color:var(--ink-soft); margin-bottom:6px;}
+#nameInput{
+  width:100%; font-family:inherit; font-size:18px; font-weight:700; color:var(--ink);
+  padding:10px 14px; border-radius:12px; border:3px solid var(--panel-edge); background:#fffdf6;
+  margin-bottom:16px;
+}
+#nameInput:focus{outline:3px solid var(--accent); outline-offset:1px;}
+
+.chars{display:flex; gap:14px; justify-content:center; margin-bottom:18px;}
+.charCard{
+  flex:1; max-width:150px; border:3px solid var(--panel-edge); background:#fffdf6;
+  border-radius:16px; padding:10px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:15px; color:var(--ink);
+}
+.charCard canvas{display:block; width:80px; height:96px; margin:0 auto 6px;}
+.charCard[aria-pressed="true"]{border-color:var(--ok); background:#eaf7ea; box-shadow:0 0 0 3px rgba(63,148,87,.35);}
+.charCard:focus-visible{outline:3px solid var(--accent);}
+
+.bigBtn{
+  font-family:inherit; font-weight:800; font-size:20px; color:#fff;
+  background:var(--ok); border:none; border-radius:14px; padding:14px 20px;
+  width:100%; cursor:pointer; box-shadow:0 5px 0 #2c6f3d;
+}
+.bigBtn:disabled{background:#9db79f; box-shadow:0 5px 0 #7d947e; cursor:not-allowed;}
+.bigBtn:not(:disabled):active{transform:translateY(3px); box-shadow:0 2px 0 #2c6f3d;}
+.hint{margin-top:10px; font-size:12px; color:var(--ink-soft); font-weight:600;}
+
+.hud{position:absolute; inset:0; pointer-events:none; font-weight:800; color:#fff;}
+.hud [hidden]{display:none!important;}
+.phaseTag{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(10,30,54,.6); padding:6px 16px; border-radius:999px; font-size:14px; letter-spacing:.5px;
+}
+.starHud{
+  position:absolute; top:12px; left:14px; display:flex; align-items:center; gap:6px;
+  background:rgba(10,30,54,.6); padding:6px 12px; border-radius:999px; font-size:16px;
+}
+.banner{
+  position:absolute; left:50%; top:16%; transform:translate(-50%,-50%);
+  background:rgba(10,30,54,.9); border:3px solid var(--accent); border-radius:16px;
+  padding:12px 24px; font-size:clamp(16px,3.6vw,24px); color:#fff; text-align:center; white-space:nowrap;
+}
+.toast{
+  position:absolute; left:50%; bottom:2px; transform:translateX(-50%);
+  background:rgba(255,255,255,.95); color:var(--ink); border:3px solid var(--accent);
+  border-radius:14px; padding:8px 16px; font-size:13px; font-weight:700; max-width:90%;
+  text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.15);
+}
+
+/* command console */
+.console{
+  position:absolute; right:10px; top:56px; bottom:10px; width:196px; pointer-events:auto;
+  background:rgba(10,30,54,.72); border-radius:16px; padding:10px; display:flex; flex-direction:column; gap:8px;
+}
+.cmdBtns{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+.cmdBtn{
+  pointer-events:auto; font-family:inherit; font-weight:800; font-size:12px; color:var(--accent-dark);
+  background:var(--cmd-bg); border:none; border-radius:10px; padding:8px 4px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:2px; box-shadow:0 3px 0 #b9c9d8;
+}
+.cmdBtn:active{transform:translateY(2px); box-shadow:0 1px 0 #b9c9d8;}
+.cmdBtn.wide{grid-column:1/-1;}
+.cmdBtn svg{width:22px; height:22px;}
+.queueBox{
+  flex:1; background:rgba(255,255,255,.9); border-radius:10px; padding:8px; overflow-y:auto;
+  display:flex; flex-wrap:wrap; align-content:flex-start; gap:5px; pointer-events:auto;
+}
+.queueBox .qi{width:26px; height:26px;}
+.queueBox .empty{color:#7d8a99; font-size:11px; font-weight:700; padding:4px;}
+.consoleBtns{display:flex; gap:6px;}
+.smallBtn{
+  pointer-events:auto; flex:1; font-family:inherit; font-weight:800; font-size:12px; color:#fff;
+  border:none; border-radius:10px; padding:9px 4px; cursor:pointer;
+}
+#runBtn{background:var(--ok); box-shadow:0 3px 0 #2c6f3d;}
+#runBtn:disabled{background:#5b7a63; box-shadow:0 3px 0 #43594a; cursor:not-allowed;}
+#clearBtn{background:var(--danger); box-shadow:0 3px 0 #8e2e22;}
+#undoBtn{background:#6b7d92; box-shadow:0 3px 0 #4d5c6e;}
+
+.smallNote{position:absolute; bottom:8px; left:10px; font-size:11px; color:rgba(255,255,255,.65); font-weight:700;}
+@media (max-width:760px){
+  .console{width:150px;}
+  .cmdBtn{font-size:10px; padding:6px 2px;}
+}
+</style>
+
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div class="hud">
+    <div class="phaseTag" id="phaseTag" hidden></div>
+    <div class="starHud" id="starHud" hidden>⭐ <span id="starCount">0</span></div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="toast" id="toast" hidden></div>
+
+    <div class="console" id="console" hidden>
+      <div class="cmdBtns">
+        <button class="cmdBtn wide" id="btnF" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 3 L19 12 H14.5 V21 H9.5 V12 H5 Z" fill="#1f7fd1"/></svg>
+          ANDAR
+        </button>
+        <button class="cmdBtn" id="btnL" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 0 19 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L5 4 Z" fill="#e0803a"/></svg>
+          ESQUERDA
+        </button>
+        <button class="cmdBtn" id="btnR" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 1 5 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L19 4 Z" fill="#e0803a"/></svg>
+          DIREITA
+        </button>
+      </div>
+      <div class="queueBox" id="queueBox"><span class="empty">Clique nos comandos acima para montar seu programa!</span></div>
+      <div class="consoleBtns">
+        <button class="smallBtn" id="undoBtn" type="button">↩</button>
+        <button class="smallBtn" id="clearBtn" type="button">LIMPAR</button>
+      </div>
+      <button class="smallBtn" id="runBtn" disabled>▶ EXECUTAR</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="startScreen">
+    <div class="panel">
+      <h1>💡 Light Bot</h1>
+      <p class="sub">Monte o programa com os comandos e ajude o robô a chegar até a lâmpada!</p>
+      <label for="nameInput">Como você se chama?</label>
+      <input id="nameInput" maxlength="14" placeholder="Digite seu nome" autocomplete="off">
+      <label>Escolha seu personagem</label>
+      <div class="chars">
+        <button type="button" class="charCard" id="cardBoy" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Robô Menino
+        </button>
+        <button type="button" class="charCard" id="cardGirl" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Robô Menina
+        </button>
+      </div>
+      <button class="bigBtn" id="startBtn" disabled>Jogar</button>
+      <p class="hint">Clique nos comandos para montar a fila, depois aperte EXECUTAR.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="endScreen" hidden>
+    <div class="panel">
+      <h1 id="endTitle">Fim de jogo</h1>
+      <p class="sub" id="endMsg"></p>
+      <button class="bigBtn" id="retryBtn">Jogar de novo</button>
+    </div>
+  </div>
+
+  <div class="smallNote">Programe o robô e depois aperte EXECUTAR</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d');
+var W = 960, H = 540;
+
+var PAL = {
+  board:'#dfe9f2', boardEdge:'#a9bdd1', boardShadow:'#c3d2e0',
+  wall:'#6b7d92', wallTop:'#8b9db2', wallEdge:'#4d5c6e',
+  target:'#1f7fd1', targetGlow:'rgba(31,127,209,0.35)',
+  bulbOff:'#c9d4d8', bulbOn:'#ffe067'
+};
+
+// ---------- sound effects ----------
+var audioCtx = null;
+function ensureAudio(){
+  if (!audioCtx){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
+  } else if (audioCtx.state === 'suspended'){
+    try { audioCtx.resume(); } catch(e){}
+  }
+  return audioCtx;
+}
+function tone(freq, t0, dur, type, vol, glideTo){
+  var ctxA = ensureAudio();
+  if (!ctxA) return;
+  var osc = ctxA.createOscillator();
+  var gain = ctxA.createGain();
+  osc.type = type || 'square';
+  var startAt = ctxA.currentTime + t0;
+  osc.frequency.setValueAtTime(freq, startAt);
+  if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, startAt + dur);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.linearRampToValueAtTime(vol, startAt + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+  osc.connect(gain); gain.connect(ctxA.destination);
+  osc.start(startAt);
+  osc.stop(startAt + dur + 0.03);
+}
+var SFX = {
+  click: function(){ tone(700, 0, 0.06, 'square', 0.12); },
+  step: function(){ tone(420, 0, 0.05, 'square', 0.1); },
+  bonk: function(){ tone(180, 0, 0.18, 'sawtooth', 0.2, 90); },
+  levelComplete: function(){
+    tone(523.25, 0, 0.12, 'square', 0.16);
+    tone(659.25, 0.11, 0.12, 'square', 0.16);
+    tone(783.99, 0.22, 0.12, 'square', 0.16);
+    tone(1046.5, 0.33, 0.24, 'square', 0.2);
+  },
+  victory: function(){
+    tone(523.25, 0, 0.13, 'square', 0.17);
+    tone(659.25, 0.12, 0.13, 'square', 0.17);
+    tone(783.99, 0.24, 0.13, 'square', 0.17);
+    tone(1046.5, 0.36, 0.13, 'square', 0.17);
+    tone(1318.5, 0.49, 0.32, 'square', 0.22);
+  }
+};
+
+// ---------- persisted prefs (shared across the robótica games) ----------
+var prefs = {};
+try { prefs = JSON.parse(localStorage.getItem('robotica_prefs') || '{}'); } catch(e){ prefs = {}; }
+
+// ---------- character preview (robot boy/girl) ----------
+function drawRobotChar(c, x, y, scale, kind, dir, walking){
+  // x,y = ground-center; dir: 0 up,1 right,2 down,3 left
+  c.save();
+  c.translate(x, y);
+  c.scale(scale, scale);
+  var rot = [0, 90, 180, -90][dir] * Math.PI/180;
+  c.rotate(rot);
+  var accent = kind === 'girl' ? '#e0507f' : '#1f7fd1';
+  var accentDark = kind === 'girl' ? '#a4335c' : '#123f74';
+  var bob = walking ? Math.sin(performance.now()/90)*2 : 0;
+
+  c.fillStyle = 'rgba(10,20,30,0.18)';
+  c.beginPath(); c.ellipse(0, 30, 22, 8, 0, 0, Math.PI*2); c.fill();
+
+  // treads/base
+  c.fillStyle = '#2a333c';
+  c.beginPath(); c.roundRect ? c.roundRect(-20,14,40,14,6) : c.rect(-20,14,40,14); c.fill();
+
+  // body
+  c.fillStyle = accent;
+  c.beginPath();
+  if (c.roundRect) c.roundRect(-19,-16,38,32,10); else c.rect(-19,-16,38,32);
+  c.fill();
+  c.fillStyle = '#eef6fb';
+  c.beginPath();
+  if (c.roundRect) c.roundRect(-12,-8,24,16,5); else c.rect(-12,-8,24,16);
+  c.fill();
+  c.fillStyle = accentDark;
+  c.beginPath(); c.arc(-6,0,2.6,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(2,0,2.6,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(10,0,2.6,0,Math.PI*2); c.fill();
+
+  // head (front-facing indicator, points "up" before rotation = forward)
+  c.fillStyle = accent;
+  c.beginPath(); c.arc(0,-24+bob*0.3,15,0,Math.PI*2); c.fill();
+  c.fillStyle = '#eef6fb';
+  c.beginPath(); c.arc(-5,-25+bob*0.3,4.2,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(5,-25+bob*0.3,4.2,0,Math.PI*2); c.fill();
+  c.fillStyle = '#16232c';
+  c.beginPath(); c.arc(-5,-24+bob*0.3,2,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(5,-24+bob*0.3,2,0,Math.PI*2); c.fill();
+  if (kind === 'girl'){
+    c.strokeStyle = accentDark; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(-10,-36); c.lineTo(-4,-30); c.stroke();
+    c.beginPath(); c.moveTo(10,-36); c.lineTo(4,-30); c.stroke();
+  }
+  c.strokeStyle = accentDark; c.lineWidth = 3; c.lineCap='round';
+  c.beginPath(); c.moveTo(0,-39); c.lineTo(0,-46); c.stroke();
+  c.fillStyle = '#ffe067';
+  c.beginPath(); c.arc(0,-48,4,0,Math.PI*2); c.fill();
+
+  c.restore();
+}
+function drawMiniPreview(canvasEl, kind){
+  var cc = canvasEl.getContext('2d');
+  cc.clearRect(0,0,80,96);
+  drawRobotChar(cc, 40, 68, 1.1, kind, 0, false);
+}
+drawMiniPreview(document.querySelector('#cardBoy canvas'), 'boy');
+drawMiniPreview(document.querySelector('#cardGirl canvas'), 'girl');
+
+// ---------- levels ----------
+// dir: 0=up(-row) 1=right(+col) 2=down(+row) 3=left(-col)
+var LEVELS = [
+  {
+    name: 'FASE 1 — PRIMEIRO PROGRAMA',
+    cols:5, rows:4,
+    start:{col:0,row:3,dir:0},
+    target:{col:0,row:0},
+    walls:[]
+  },
+  {
+    name: 'FASE 2 — VIRANDO O ROBÔ',
+    cols:5, rows:4,
+    start:{col:0,row:3,dir:0},
+    target:{col:4,row:0},
+    walls:[]
+  },
+  {
+    name: 'FASE 3 — DESVIE DO OBSTÁCULO',
+    cols:6, rows:5,
+    start:{col:0,row:4,dir:0},
+    target:{col:3,row:0},
+    walls:[[0,1],[0,0],[4,2],[5,2]]
+  }
+];
+var MAX_CMDS = 12;
+
+// ---------- state ----------
+var levelIdx = 0;
+var program = [];
+var bot = null; // {col,row,dir,x,y,angle} render state
+var execTimer = null;
+var execStep = 0;
+var execState = 'edit'; // edit | running | success | fail
+var stars = 0;
+var playerKind = 'boy';
+var playerName = '';
+var bannerTimer = 0, toastTimer = 0;
+var CELL = 78;
+
+function levelOrigin(lv){
+  var gw = lv.cols*CELL, gh = lv.rows*CELL;
+  return { x: (W-220-gw)/2 + 0, y: (H-gh)/2 + 10 };
+}
+function isWall(lv, col, row){
+  return lv.walls.some(function(w){ return w[0]===col && w[1]===row; });
+}
+
+function resetBot(lv){
+  bot = { col:lv.start.col, row:lv.start.row, dir:lv.start.dir, lit:false };
+}
+
+function loadLevel(i){
+  levelIdx = i;
+  var lv = LEVELS[i];
+  resetBot(lv);
+  program = [];
+  execState = 'edit';
+  updateQueueUI();
+  showBanner(lv.name, 1500);
+  document.getElementById('phaseTag').hidden = false;
+  document.getElementById('phaseTag').textContent = 'FASE ' + (i+1) + ' / ' + LEVELS.length;
+}
+
+function showBanner(text, ms){
+  var b = document.getElementById('banner');
+  b.textContent = text; b.hidden = false; bannerTimer = ms;
+}
+function showToast(text, ms){
+  var t = document.getElementById('toast');
+  t.textContent = text; t.hidden = false; toastTimer = ms;
+}
+
+function startGame(){
+  stars = 0;
+  document.getElementById('starHud').hidden = false;
+  document.getElementById('console').hidden = false;
+  updateStars();
+  loadLevel(0);
+  setTimeout(function(){
+    showToast('🤖 Clique nos comandos para montar o programa e depois aperte EXECUTAR!', 4000);
+  }, 1600);
+}
+function updateStars(){ document.getElementById('starCount').textContent = stars; }
+
+// ---------- queue UI ----------
+var CMD_ICON = {
+  F: '<svg viewBox="0 0 24 24"><path d="M12 3 L19 12 H14.5 V21 H9.5 V12 H5 Z" fill="#1f7fd1"/></svg>',
+  L: '<svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 0 19 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L5 4 Z" fill="#e0803a"/></svg>',
+  R: '<svg viewBox="0 0 24 24"><path d="M12 4 A8 8 0 1 1 5 9" fill="none" stroke="#e0803a" stroke-width="3" stroke-linecap="round"/><path d="M12 0 L12 8 L19 4 Z" fill="#e0803a"/></svg>'
+};
+function updateQueueUI(){
+  var box = document.getElementById('queueBox');
+  if (program.length === 0){
+    box.innerHTML = '<span class="empty">Clique nos comandos acima para montar seu programa!</span>';
+  } else {
+    box.innerHTML = program.map(function(cmd){ return '<span class="qi">'+CMD_ICON[cmd]+'</span>'; }).join('');
+  }
+  document.getElementById('runBtn').disabled = program.length === 0 || execState === 'running';
+}
+function addCmd(cmd){
+  if (execState === 'running') return;
+  if (program.length >= MAX_CMDS) return;
+  program.push(cmd);
+  SFX.click();
+  updateQueueUI();
+}
+function undoCmd(){
+  if (execState === 'running') return;
+  program.pop();
+  updateQueueUI();
+}
+function clearCmds(){
+  if (execState === 'running') return;
+  program = [];
+  updateQueueUI();
+}
+
+// ---------- execution ----------
+function runProgram(){
+  if (execState === 'running' || program.length === 0) return;
+  ensureAudio();
+  execState = 'running';
+  execStep = 0;
+  updateQueueUI();
+  stepExec();
+}
+function stepExec(){
+  var lv = LEVELS[levelIdx];
+  if (execStep >= program.length){
+    finishRun(lv);
+    return;
+  }
+  var cmd = program[execStep];
+  if (cmd === 'L'){ bot.dir = (bot.dir + 3) % 4; SFX.step(); }
+  else if (cmd === 'R'){ bot.dir = (bot.dir + 1) % 4; SFX.step(); }
+  else if (cmd === 'F'){
+    var dc = [0,1,0,-1][bot.dir], dr = [-1,0,1,0][bot.dir];
+    var nc = bot.col+dc, nr = bot.row+dr;
+    if (nc<0 || nr<0 || nc>=lv.cols || nr>=lv.rows || isWall(lv,nc,nr)){
+      SFX.bonk();
+      execState = 'fail';
+      updateQueueUI();
+      showToast('Ops! O robô bateu. Ajuste o programa e tente de novo!', 2600);
+      return;
+    }
+    bot.col = nc; bot.row = nr;
+    SFX.step();
+  }
+  execStep++;
+  execTimer = setTimeout(stepExec, 420);
+}
+function finishRun(lv){
+  if (bot.col === lv.target.col && bot.row === lv.target.row){
+    bot.lit = true;
+    execState = 'success';
+    stars++; updateStars();
+    SFX.levelComplete();
+    if (levelIdx < LEVELS.length-1){
+      showBanner('FASE ' + (levelIdx+1) + ' CONCLUÍDA!', 1400);
+      var next = levelIdx+1;
+      setTimeout(function(){ loadLevel(next); }, 1500);
+    } else {
+      setTimeout(victory, 900);
+    }
+  } else {
+    execState = 'fail';
+    updateQueueUI();
+    showToast('Quase lá! O robô não chegou na lâmpada. Ajuste o programa!', 2800);
+  }
+}
+
+function victory(){
+  execState = 'victory';
+  SFX.victory();
+  document.getElementById('endTitle').textContent = 'Você programou o Light Bot!';
+  document.getElementById('endMsg').textContent = 'Parabéns, ' + (playerName||'Cientista') + '! Você aprendeu a montar um programa passo a passo — igual um robô de verdade — e conseguiu levar o robô até a lâmpada em todas as fases! Estrelas: ' + stars + '.';
+  document.getElementById('endScreen').hidden = false;
+}
+
+// ---------- draw ----------
+function drawBoard(lv){
+  var o = levelOrigin(lv);
+  ctx.fillStyle = '#0f2a4a';
+  ctx.fillRect(0,0,W,H);
+  for (var r=0;r<lv.rows;r++){
+    for (var c=0;c<lv.cols;c++){
+      var x = o.x + c*CELL, y = o.y + r*CELL;
+      var wall = isWall(lv,c,r);
+      if (wall){
+        ctx.fillStyle = PAL.wallEdge; ctx.fillRect(x+3,y+3,CELL-6,CELL-6+8);
+        ctx.fillStyle = PAL.wall; ctx.fillRect(x+3,y+3,CELL-6,CELL-6);
+        ctx.fillStyle = PAL.wallTop; ctx.fillRect(x+7,y+7,CELL-14,10);
+      } else {
+        ctx.fillStyle = PAL.boardShadow; ctx.fillRect(x+2,y+4,CELL-4,CELL-4);
+        ctx.fillStyle = PAL.board; ctx.fillRect(x+2,y+2,CELL-4,CELL-4);
+        ctx.strokeStyle = PAL.boardEdge; ctx.lineWidth=1; ctx.strokeRect(x+2,y+2,CELL-4,CELL-4);
+      }
+    }
+  }
+  // target tile
+  var tx = o.x + lv.target.col*CELL + CELL/2, ty = o.y + lv.target.row*CELL + CELL/2;
+  ctx.fillStyle = PAL.targetGlow;
+  ctx.beginPath(); ctx.arc(tx,ty,CELL*0.55,0,Math.PI*2); ctx.fill();
+  drawBulb(tx,ty, bot && bot.col===lv.target.col && bot.row===lv.target.row && bot.lit);
+}
+function drawBulb(x,y,lit){
+  ctx.save(); ctx.translate(x,y);
+  if (lit){
+    ctx.fillStyle = 'rgba(255,224,103,0.5)';
+    ctx.beginPath(); ctx.arc(0,-4,26,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle = '#8b98a0'; ctx.fillRect(-6,10,12,8);
+  ctx.fillStyle = lit ? PAL.bulbOn : PAL.bulbOff;
+  ctx.beginPath(); ctx.arc(0,-4,16,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#8b98a0'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-4,16,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+}
+function render(){
+  var lv = LEVELS[levelIdx];
+  if (!lv || !bot) return;
+  drawBoard(lv);
+  var o = levelOrigin(lv);
+  var x = o.x + bot.col*CELL + CELL/2, y = o.y + bot.row*CELL + CELL/2 + 6;
+  drawRobotChar(ctx, x, y, 1, playerKind, bot.dir, execState==='running');
+
+  if (bannerTimer > 0){ bannerTimer -= 16; if (bannerTimer<=0) document.getElementById('banner').hidden = true; }
+  if (toastTimer > 0){ toastTimer -= 16; if (toastTimer<=0) document.getElementById('toast').hidden = true; }
+  requestAnimationFrame(render);
+}
+
+// ---------- input wiring ----------
+document.getElementById('btnF').addEventListener('click', function(){ addCmd('F'); });
+document.getElementById('btnL').addEventListener('click', function(){ addCmd('L'); });
+document.getElementById('btnR').addEventListener('click', function(){ addCmd('R'); });
+document.getElementById('undoBtn').addEventListener('click', undoCmd);
+document.getElementById('clearBtn').addEventListener('click', clearCmds);
+document.getElementById('runBtn').addEventListener('click', runProgram);
+
+var chosenKind = prefs.kind || null;
+var cardBoy = document.getElementById('cardBoy'), cardGirl = document.getElementById('cardGirl');
+var nameInput = document.getElementById('nameInput');
+var startBtn = document.getElementById('startBtn');
+if (prefs.name) nameInput.value = prefs.name;
+
+function refreshCards(){
+  cardBoy.setAttribute('aria-pressed', chosenKind==='boy');
+  cardGirl.setAttribute('aria-pressed', chosenKind==='girl');
+  refreshStart();
+}
+function refreshStart(){
+  startBtn.disabled = !(chosenKind && nameInput.value.trim().length>0);
+}
+cardBoy.addEventListener('click', function(){ chosenKind='boy'; refreshCards(); });
+cardGirl.addEventListener('click', function(){ chosenKind='girl'; refreshCards(); });
+if (chosenKind) refreshCards();
+nameInput.addEventListener('input', refreshStart);
+
+startBtn.addEventListener('click', function(){
+  ensureAudio();
+  playerKind = chosenKind; playerName = nameInput.value.trim().slice(0,14);
+  try { localStorage.setItem('robotica_prefs', JSON.stringify({kind:playerKind, name:playerName})); } catch(e){}
+  document.getElementById('startScreen').hidden = true;
+  startGame();
+});
+document.getElementById('retryBtn').addEventListener('click', function(){
+  ensureAudio();
+  document.getElementById('endScreen').hidden = true;
+  startGame();
+});
+
+resetBot(LEVELS[0]);
+requestAnimationFrame(render);
+})();
+</script>
