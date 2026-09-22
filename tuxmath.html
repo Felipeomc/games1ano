@@ -1,0 +1,670 @@
+<title>Base Espacial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky-deep:#100a24;
+  --sky:#1c1240;
+  --panel:#fbf3df;
+  --panel-edge:#c9a35c;
+  --ink:#182634;
+  --ink-soft:#556173;
+  --accent:#e0507f;
+  --accent-dark:#8c2955;
+  --ok:#3f9457;
+  --danger:#d64a3a;
+  --readout-bg:#0d0620;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--sky-deep); color:var(--ink);
+  font-family:'Baloo 2', 'Segoe UI Rounded', system-ui, sans-serif;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; padding-inline:16px; padding-block:12px;
+}
+#stage{
+  position:relative; width:100%; max-width:1040px;
+  aspect-ratio:16/9; border-radius:22px; overflow:hidden;
+  box-shadow:0 0 0 6px #2a1a52, 0 18px 50px rgba(0,0,0,.5);
+  background:linear-gradient(var(--sky), var(--sky-deep));
+}
+#game{position:absolute; inset:0; width:100%; height:100%; display:block;}
+
+.overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(rgba(10,6,26,.72), rgba(10,6,26,.86));
+  padding:20px; text-align:center;
+}
+.overlay[hidden]{display:none!important;}
+
+.panel{
+  background:var(--panel); border:4px solid var(--panel-edge); border-radius:20px;
+  padding:22px 26px; max-width:92%; width:520px; box-shadow:0 10px 0 rgba(0,0,0,.25);
+}
+h1{
+  margin:0 0 4px; font-size:clamp(26px,6vw,40px); color:var(--accent-dark);
+  text-shadow:0 3px 0 rgba(0,0,0,.12); text-wrap:balance;
+}
+.sub{margin:0 0 18px; color:var(--ink-soft); font-weight:600; font-size:15px;}
+
+label{display:block; text-align:left; font-weight:700; font-size:14px; color:var(--ink-soft); margin-bottom:6px;}
+#nameInput{
+  width:100%; font-family:inherit; font-size:18px; font-weight:700; color:var(--ink);
+  padding:10px 14px; border-radius:12px; border:3px solid var(--panel-edge); background:#fffdf6;
+  margin-bottom:16px;
+}
+#nameInput:focus{outline:3px solid var(--accent); outline-offset:1px;}
+
+.chars{display:flex; gap:14px; justify-content:center; margin-bottom:18px;}
+.charCard{
+  flex:1; max-width:150px; border:3px solid var(--panel-edge); background:#fffdf6;
+  border-radius:16px; padding:10px; cursor:pointer; font-family:inherit;
+  font-weight:800; font-size:15px; color:var(--ink);
+}
+.charCard canvas{display:block; width:80px; height:96px; margin:0 auto 6px;}
+.charCard[aria-pressed="true"]{border-color:var(--ok); background:#eaf7ea; box-shadow:0 0 0 3px rgba(63,148,87,.35);}
+.charCard:focus-visible{outline:3px solid var(--accent);}
+
+.bigBtn{
+  font-family:inherit; font-weight:800; font-size:20px; color:#fff;
+  background:var(--ok); border:none; border-radius:14px; padding:14px 20px;
+  width:100%; cursor:pointer; box-shadow:0 5px 0 #2c6f3d;
+}
+.bigBtn:disabled{background:#9db79f; box-shadow:0 5px 0 #7d947e; cursor:not-allowed;}
+.bigBtn:not(:disabled):active{transform:translateY(3px); box-shadow:0 2px 0 #2c6f3d;}
+.hint{margin-top:10px; font-size:12px; color:var(--ink-soft); font-weight:600;}
+
+.hud{position:absolute; inset:0; pointer-events:none; font-weight:800; color:#fff;}
+.hud [hidden]{display:none!important;}
+.hearts{position:absolute; top:12px; right:14px; display:flex; gap:4px;}
+.heart{width:24px; height:24px;}
+.starHud{
+  position:absolute; top:12px; left:14px; display:flex; align-items:center; gap:6px;
+  background:rgba(20,10,40,.55); padding:6px 12px; border-radius:999px; font-size:16px;
+}
+.phaseTag{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(20,10,40,.55); padding:6px 16px; border-radius:999px; font-size:14px; letter-spacing:.5px;
+}
+.goalTag{
+  position:absolute; top:48px; left:50%; transform:translateX(-50%);
+  background:rgba(20,10,40,.45); padding:4px 14px; border-radius:999px; font-size:12px; letter-spacing:.3px; font-weight:700;
+}
+.banner{
+  position:absolute; left:50%; top:16%; transform:translate(-50%,-50%);
+  background:rgba(20,10,40,.9); border:3px solid var(--accent); border-radius:16px;
+  padding:12px 24px; font-size:clamp(16px,3.6vw,24px); color:#fff; text-align:center; white-space:nowrap;
+}
+.toast{
+  position:absolute; left:50%; bottom:2px; transform:translateX(-50%);
+  background:rgba(255,255,255,.95); color:var(--ink); border:3px solid var(--accent);
+  border-radius:14px; padding:8px 16px; font-size:13px; font-weight:700; max-width:86%;
+  text-align:center; box-shadow:0 6px 0 rgba(0,0,0,.15);
+}
+
+/* console */
+.console{
+  position:absolute; right:10px; top:56px; bottom:10px; width:186px; pointer-events:auto;
+  background:rgba(15,8,34,.75); border-radius:16px; padding:10px; display:flex; flex-direction:column; gap:8px;
+}
+.readout{
+  background:var(--readout-bg); border:2px solid #4a3a7a; border-radius:10px; height:46px;
+  display:flex; align-items:center; justify-content:center; font-family:'Baloo 2'; font-weight:800;
+  font-size:26px; color:#7ef7ff; letter-spacing:2px;
+}
+.numpad{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; flex:1;}
+.numBtn{
+  pointer-events:auto; font-family:inherit; font-weight:800; font-size:18px; color:#2a1a52;
+  background:#e7defc; border:none; border-radius:10px; cursor:pointer; box-shadow:0 3px 0 #b9a9e0;
+}
+.numBtn:active{transform:translateY(2px); box-shadow:0 1px 0 #b9a9e0;}
+.numBtn.bs{background:#f4c3b8; box-shadow:0 3px 0 #d68a76; font-size:15px;}
+#fireBtn{
+  pointer-events:auto; font-family:inherit; font-weight:800; font-size:15px; color:#fff;
+  background:var(--accent); border:none; border-radius:10px; padding:11px 4px; cursor:pointer;
+  box-shadow:0 3px 0 var(--accent-dark);
+}
+#fireBtn:active{transform:translateY(2px); box-shadow:0 1px 0 var(--accent-dark);}
+
+.smallNote{position:absolute; bottom:8px; left:10px; font-size:11px; color:rgba(255,255,255,.65); font-weight:700;}
+@media (max-width:760px){
+  .console{width:150px;}
+  .numBtn{font-size:15px;}
+}
+</style>
+
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div class="hud">
+    <div class="phaseTag" id="phaseTag" hidden></div>
+    <div class="goalTag" id="goalTag" hidden></div>
+    <div class="starHud" id="starHud" hidden>⭐ <span id="starCount">0</span></div>
+    <div class="hearts" id="heartsHud" hidden></div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="toast" id="toast" hidden></div>
+
+    <div class="console" id="console" hidden>
+      <div class="readout" id="readout">?</div>
+      <div class="numpad">
+        <button class="numBtn" data-n="1">1</button>
+        <button class="numBtn" data-n="2">2</button>
+        <button class="numBtn" data-n="3">3</button>
+        <button class="numBtn" data-n="4">4</button>
+        <button class="numBtn" data-n="5">5</button>
+        <button class="numBtn" data-n="6">6</button>
+        <button class="numBtn" data-n="7">7</button>
+        <button class="numBtn" data-n="8">8</button>
+        <button class="numBtn" data-n="9">9</button>
+        <button class="numBtn bs" id="bsBtn">⌫</button>
+        <button class="numBtn" data-n="0">0</button>
+        <button class="numBtn" id="clrBtn">C</button>
+      </div>
+      <button id="fireBtn">🔥 DISPARAR</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="startScreen">
+    <div class="panel">
+      <h1>🚀 Base Espacial</h1>
+      <p class="sub">Resolva a soma de cada meteoro e digite o resultado para disparar o laser certo!</p>
+      <label for="nameInput">Como você se chama?</label>
+      <input id="nameInput" maxlength="14" placeholder="Digite seu nome" autocomplete="off">
+      <label>Escolha seu personagem</label>
+      <div class="chars">
+        <button type="button" class="charCard" id="cardBoy" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Astronauta
+        </button>
+        <button type="button" class="charCard" id="cardGirl" aria-pressed="false">
+          <canvas width="80" height="96"></canvas>Astronauta
+        </button>
+      </div>
+      <button class="bigBtn" id="startBtn" disabled>Jogar</button>
+      <p class="hint">Digite o resultado da soma e aperte DISPARAR antes que o meteoro chegue!</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="endScreen" hidden>
+    <div class="panel">
+      <h1 id="endTitle">Fim de jogo</h1>
+      <p class="sub" id="endMsg"></p>
+      <button class="bigBtn" id="retryBtn">Jogar de novo</button>
+    </div>
+  </div>
+
+  <div class="smallNote">Digite o resultado e aperte Enter ou DISPARAR</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var canvas = document.getElementById('game');
+var ctx = canvas.getContext('2d');
+var W = 960, H = 540;
+var CONSOLE_W = 196;
+var PLAY_W = W - CONSOLE_W;
+var BASE_Y = H - 60;
+
+var PAL = {
+  rock:'#8a7a6a', rockDark:'#5c4f42', rockLight:'#ab9a86',
+  bubble:'#0d0620', bubbleEdge:'#7ef7ff', bubbleText:'#ffe067',
+  laser:'#7ef7ff', laserCore:'#ffffff',
+  shipBody:'#e7defc', shipDark:'#8a78c0'
+};
+
+// ---------- sound effects ----------
+var audioCtx = null;
+function ensureAudio(){
+  if (!audioCtx){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
+  } else if (audioCtx.state === 'suspended'){
+    try { audioCtx.resume(); } catch(e){}
+  }
+  return audioCtx;
+}
+function tone(freq, t0, dur, type, vol, glideTo){
+  var ctxA = ensureAudio();
+  if (!ctxA) return;
+  var osc = ctxA.createOscillator();
+  var gain = ctxA.createGain();
+  osc.type = type || 'square';
+  var startAt = ctxA.currentTime + t0;
+  osc.frequency.setValueAtTime(freq, startAt);
+  if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, startAt + dur);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.linearRampToValueAtTime(vol, startAt + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+  osc.connect(gain); gain.connect(ctxA.destination);
+  osc.start(startAt);
+  osc.stop(startAt + dur + 0.03);
+}
+var SFX = {
+  digit: function(){ tone(620, 0, 0.05, 'square', 0.1); },
+  fireMiss: function(){ tone(200, 0, 0.12, 'square', 0.12); },
+  laser: function(){ tone(1400, 0, 0.05, 'sawtooth', 0.14, 500); tone(900,0.02,0.08,'square',0.12,300); },
+  explosion: function(){ tone(160, 0, 0.22, 'sawtooth', 0.22, 40); },
+  impact: function(){ tone(120, 0, 0.3, 'sawtooth', 0.24, 50); },
+  levelComplete: function(){
+    tone(523.25, 0, 0.12, 'square', 0.16);
+    tone(659.25, 0.11, 0.12, 'square', 0.16);
+    tone(783.99, 0.22, 0.12, 'square', 0.16);
+    tone(1046.5, 0.33, 0.24, 'square', 0.2);
+  },
+  victory: function(){
+    tone(523.25, 0, 0.13, 'square', 0.17);
+    tone(659.25, 0.12, 0.13, 'square', 0.17);
+    tone(783.99, 0.24, 0.13, 'square', 0.17);
+    tone(1046.5, 0.36, 0.13, 'square', 0.17);
+    tone(1318.5, 0.49, 0.32, 'square', 0.22);
+  },
+  gameOver: function(){ tone(392, 0, 0.55, 'sawtooth', 0.2, 100); }
+};
+
+// ---------- persisted prefs (shared across the robótica games) ----------
+var prefs = {};
+try { prefs = JSON.parse(localStorage.getItem('robotica_prefs') || '{}'); } catch(e){ prefs = {}; }
+
+// ---------- astronaut character ----------
+function drawAstronaut(c, x, y, scale, kind){
+  c.save();
+  c.translate(x, y);
+  c.scale(scale, scale);
+  var accent = kind === 'girl' ? '#e0507f' : '#1f7fd1';
+  var accentDark = kind === 'girl' ? '#a4335c' : '#123f74';
+
+  c.fillStyle = 'rgba(0,0,0,0.18)';
+  c.beginPath(); c.ellipse(0, 44, 26, 8, 0, 0, Math.PI*2); c.fill();
+
+  c.fillStyle = '#e7edf2';
+  c.beginPath();
+  if (c.roundRect) c.roundRect(-20,-6,40,50,10); else c.rect(-20,-6,40,50);
+  c.fill();
+  c.fillStyle = accent;
+  c.beginPath();
+  if (c.roundRect) c.roundRect(-16,4,32,26,6); else c.rect(-16,4,32,26);
+  c.fill();
+  c.fillStyle = accentDark;
+  c.fillRect(-16, 16, 32, 6);
+
+  c.fillStyle = '#e7edf2';
+  c.beginPath(); c.arc(-24,10,8,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(24,10,8,0,Math.PI*2); c.fill();
+
+  c.fillStyle = '#e7edf2';
+  c.beginPath(); c.arc(0,-24,20,0,Math.PI*2); c.fill();
+  c.fillStyle = '#8fd8ff';
+  c.beginPath(); c.arc(0,-22,14,0,Math.PI*2); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.5)';
+  c.beginPath(); c.ellipse(-5,-28,5,7,0.4,0,Math.PI*2); c.fill();
+  c.fillStyle = accent;
+  c.beginPath(); c.arc(0,-24,20,Math.PI*0.75,Math.PI*1.25); c.fill();
+
+  c.restore();
+}
+function drawMiniPreview(canvasEl, kind){
+  var cc = canvasEl.getContext('2d');
+  cc.clearRect(0,0,80,96);
+  drawAstronaut(cc, 40, 66, 1.0, kind);
+}
+drawMiniPreview(document.querySelector('#cardBoy canvas'), 'boy');
+drawMiniPreview(document.querySelector('#cardGirl canvas'), 'girl');
+
+// ---------- levels ----------
+var LEVELS = [
+  { name:'FASE 1 — PRIMEIRAS CONTAS',    opMin:0, opMax:3, target:6,  maxOn:1, speed:0.35, spawnMs:2600 },
+  { name:'FASE 2 — MAIS METEOROS',       opMin:0, opMax:4, target:7,  maxOn:1, speed:0.40, spawnMs:2400 },
+  { name:'FASE 3 — CHUVA DE METEOROS',   opMin:0, opMax:5, target:8,  maxOn:2, speed:0.45, spawnMs:2200 },
+  { name:'FASE 4 — SOMAS MAIORES',       opMin:1, opMax:5, target:8,  maxOn:2, speed:0.50, spawnMs:2100 },
+  { name:'FASE 5 — ALERTA VERMELHO',     opMin:1, opMax:6, target:9,  maxOn:2, speed:0.55, spawnMs:2000 },
+  { name:'FASE 6 — VELOCIDADE MÁXIMA',   opMin:1, opMax:7, target:9,  maxOn:3, speed:0.60, spawnMs:1850 },
+  { name:'FASE 7 — CAMPO DE ASTEROIDES', opMin:1, opMax:8, target:10, maxOn:3, speed:0.65, spawnMs:1700 },
+  { name:'FASE 8 — TEMPESTADE ESPACIAL', opMin:2, opMax:9, target:10, maxOn:3, speed:0.72, spawnMs:1550 },
+  { name:'FASE 9 — DEFESA FINAL',        opMin:2, opMax:9, target:11, maxOn:4, speed:0.80, spawnMs:1450 },
+  { name:'FASE 10 — ÚLTIMA ONDA',        opMin:3, opMax:9, target:12, maxOn:4, speed:0.90, spawnMs:1300 }
+];
+
+// ---------- state ----------
+var levelIdx = 0;
+var meteors = [];
+var explosions = [];
+var laserFx = null;
+var typed = '';
+var hearts = 3, stars = 0, cleared = 0;
+var state = 'start'; // start | playing | banner | gameover | victory
+var playerKind = 'boy', playerName = '';
+var bannerTimer = 0, toastTimer = 0;
+var spawnTimer = 0;
+var meteorId = 0;
+var shipTargetX = PLAY_W/2, shipAimX = PLAY_W/2, shipAimY = BASE_Y-40;
+
+function rand(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+function spawnMeteor(lv){
+  var a = rand(lv.opMin, lv.opMax), b = rand(lv.opMin, lv.opMax);
+  var tries = 0, x;
+  do { x = rand(60, PLAY_W-60); tries++; }
+  while (tries < 12 && meteors.some(function(m){ return Math.abs(m.x-x) < 110; }));
+  meteors.push({
+    id: meteorId++, x:x, y:-40, a:a, b:b, answer:a+b,
+    speed: lv.speed + Math.random()*0.15, r: 30 + Math.random()*8,
+    rot: Math.random()*Math.PI*2, rotSpeed: (Math.random()-0.5)*0.02
+  });
+}
+
+function loadLevel(i){
+  levelIdx = i;
+  var lv = LEVELS[i];
+  meteors = []; explosions = []; laserFx = null;
+  typed = ''; cleared = 0; spawnTimer = 400;
+  updateReadout();
+  state = 'playing';
+  showBanner(lv.name, 1500);
+  document.getElementById('phaseTag').hidden = false;
+  document.getElementById('phaseTag').textContent = 'FASE ' + (i+1) + ' / ' + LEVELS.length;
+  document.getElementById('goalTag').hidden = false;
+  updateGoalTag();
+}
+function updateGoalTag(){
+  var lv = LEVELS[levelIdx];
+  document.getElementById('goalTag').textContent = 'DESTRUA ' + (lv.target - cleared) + ' METEOROS';
+}
+
+function showBanner(text, ms){
+  var b = document.getElementById('banner');
+  b.textContent = text; b.hidden = false; bannerTimer = ms;
+}
+function showToast(text, ms){
+  var t = document.getElementById('toast');
+  t.textContent = text; t.hidden = false; toastTimer = ms;
+}
+
+function startGame(){
+  hearts = 3; stars = 0;
+  document.getElementById('heartsHud').hidden = false;
+  document.getElementById('starHud').hidden = false;
+  document.getElementById('console').hidden = false;
+  updateHearts(); updateStars();
+  loadLevel(0);
+  setTimeout(function(){
+    showToast('🧮 Resolva a soma, digite o resultado e aperte DISPARAR antes do meteoro chegar!', 4200);
+  }, 1700);
+}
+function updateHearts(){
+  var el = document.getElementById('heartsHud'); el.innerHTML = '';
+  for (var i=0;i<3;i++){
+    var full = i < hearts;
+    var svg = '<svg class="heart" viewBox="0 0 32 28"><path d="M16 26 C4 18 0 11 0 6.5 C0 2 4 0 7.5 0 C11 0 14 2 16 6 C18 2 21 0 24.5 0 C28 0 32 2 32 6.5 C32 11 28 18 16 26 Z" fill="' + (full? '#e0503f':'rgba(255,255,255,0.25)') + '" stroke="#7a1f16" stroke-width="1.5"/></svg>';
+    el.innerHTML += svg;
+  }
+}
+function updateStars(){ document.getElementById('starCount').textContent = stars; }
+function updateReadout(){ document.getElementById('readout').textContent = typed.length ? typed : '?'; }
+
+// ---------- input logic ----------
+function pressDigit(d){
+  if (state !== 'playing') return;
+  if (typed.length >= 2) return;
+  if (typed === '0') typed = '';
+  typed += d;
+  SFX.digit();
+  updateReadout();
+}
+function pressBackspace(){
+  if (state !== 'playing') return;
+  typed = typed.slice(0,-1);
+  updateReadout();
+}
+function pressClear(){
+  if (state !== 'playing') return;
+  typed = '';
+  updateReadout();
+}
+function pressFire(){
+  if (state !== 'playing' || typed.length===0) return;
+  var val = parseInt(typed, 10);
+  var matches = meteors.filter(function(m){ return m.answer === val && !m.dying; });
+  if (matches.length === 0){
+    SFX.fireMiss();
+    typed = ''; updateReadout();
+    return;
+  }
+  matches.sort(function(p,q){ return q.y - p.y; });
+  var target = matches[0];
+  target.dying = true;
+  laserFx = { x1: shipAimX, y1: shipAimY, x2: target.x, y2: target.y, timer: 140 };
+  SFX.laser();
+  setTimeout(function(){
+    SFX.explosion();
+    explosions.push({x:target.x, y:target.y, t:0});
+    meteors = meteors.filter(function(m){ return m.id !== target.id; });
+    stars++; cleared++;
+    updateStars(); updateGoalTag();
+    checkLevelComplete();
+  }, 110);
+  typed = ''; updateReadout();
+}
+function checkLevelComplete(){
+  var lv = LEVELS[levelIdx];
+  if (cleared >= lv.target){
+    if (levelIdx < LEVELS.length-1){
+      state = 'banner';
+      showBanner('FASE ' + (levelIdx+1) + ' CONCLUÍDA!', 1400);
+      SFX.levelComplete();
+      var next = levelIdx+1;
+      setTimeout(function(){ loadLevel(next); }, 1500);
+    } else {
+      SFX.victory();
+      victory();
+    }
+  }
+}
+
+function gameOver(){
+  state = 'gameover';
+  SFX.gameOver();
+  document.getElementById('endTitle').textContent = 'A base foi atingida!';
+  document.getElementById('endMsg').textContent = (playerName||'Cientista') + ', você chegou até a fase ' + (levelIdx+1) + ' e destruiu ' + stars + (stars===1?' meteoro':' meteoros') + '. Treine as somas e tente de novo!';
+  document.getElementById('endScreen').hidden = false;
+}
+function victory(){
+  state = 'victory';
+  document.getElementById('endTitle').textContent = 'Base espacial salva!';
+  document.getElementById('endMsg').textContent = 'Parabéns, ' + (playerName||'Cientista') + '! Você resolveu somas cada vez mais difíceis e protegeu a base em todas as fases! Meteoros destruídos: ' + stars + '.';
+  document.getElementById('endScreen').hidden = false;
+}
+
+// ---------- update ----------
+var STAR_SEEDS = (function(){ var a=[]; for (var i=0;i<50;i++){ a.push({x:(i*61.3)%W, y:(i*37.7)%H, r:1+((i*7)%3), ph:i*1.7}); } return a; })();
+function update(dt){
+  if (state !== 'playing') return;
+  var lv = LEVELS[levelIdx];
+
+  spawnTimer -= dt;
+  if (spawnTimer <= 0 && meteors.length < lv.maxOn){
+    spawnMeteor(lv);
+    spawnTimer = lv.spawnMs * (0.7 + Math.random()*0.6);
+  }
+
+  for (var i=meteors.length-1; i>=0; i--){
+    var m = meteors[i];
+    if (m.dying) continue;
+    m.y += m.speed * (dt/16);
+    m.rot += m.rotSpeed * (dt/16);
+    if (m.y >= BASE_Y - 20){
+      meteors.splice(i,1);
+      hearts--; updateHearts(); SFX.impact();
+      explosions.push({x:m.x, y:BASE_Y-30, t:0});
+      if (hearts <= 0){ gameOver(); return; }
+    }
+  }
+  for (var j=explosions.length-1;j>=0;j--){
+    explosions[j].t += dt;
+    if (explosions[j].t > 450) explosions.splice(j,1);
+  }
+  if (laserFx){
+    laserFx.timer -= dt;
+    if (laserFx.timer <= 0) laserFx = null;
+  }
+
+  if (bannerTimer > 0){ bannerTimer -= dt; if (bannerTimer<=0) document.getElementById('banner').hidden = true; }
+  if (toastTimer > 0){ toastTimer -= dt; if (toastTimer<=0) document.getElementById('toast').hidden = true; }
+}
+
+// ---------- draw ----------
+function drawSpace(){
+  var g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#1c1240'); g.addColorStop(0.6,'#170c34'); g.addColorStop(1,'#0d0722');
+  ctx.fillStyle = g; ctx.fillRect(0,0,PLAY_W,H);
+
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  var neb = ctx.createRadialGradient(PLAY_W*0.7,140,10,PLAY_W*0.7,140,220);
+  neb.addColorStop(0,'#a855f7'); neb.addColorStop(1,'rgba(168,85,247,0)');
+  ctx.fillStyle = neb; ctx.fillRect(0,0,PLAY_W,H);
+  var neb2 = ctx.createRadialGradient(PLAY_W*0.2,300,10,PLAY_W*0.2,300,200);
+  neb2.addColorStop(0,'#3b82f6'); neb2.addColorStop(1,'rgba(59,130,246,0)');
+  ctx.fillStyle = neb2; ctx.fillRect(0,0,PLAY_W,H);
+  ctx.restore();
+
+  var t = performance.now()/700;
+  STAR_SEEDS.forEach(function(s){
+    if (s.x > PLAY_W) return;
+    var tw = 0.5 + 0.5*Math.sin(t+s.ph);
+    ctx.fillStyle = 'rgba(255,255,255,'+(tw*0.8+0.15).toFixed(2)+')';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+  });
+
+  ctx.fillStyle = 'rgba(20,12,46,0.9)';
+  ctx.fillRect(0, BASE_Y+10, PLAY_W, H-BASE_Y-10);
+  ctx.fillStyle = '#3a2a6a';
+  ctx.fillRect(0, BASE_Y+6, PLAY_W, 6);
+}
+function drawMeteor(m){
+  ctx.save();
+  ctx.translate(m.x, m.y);
+  ctx.rotate(m.rot);
+  ctx.fillStyle = PAL.rockDark;
+  ctx.beginPath();
+  var n = 8;
+  for (var i=0;i<n;i++){
+    var a = (i/n)*Math.PI*2;
+    var rr = m.r * (0.8 + 0.2*Math.sin(i*2.1+m.id));
+    var px = Math.cos(a)*rr, py = Math.sin(a)*rr;
+    if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = PAL.rock;
+  ctx.beginPath(); ctx.arc(-m.r*0.15,-m.r*0.15,m.r*0.72,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = PAL.rockLight;
+  ctx.beginPath(); ctx.arc(-m.r*0.35,-m.r*0.35,m.r*0.28,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  var label = m.a + ' + ' + m.b + ' = ?';
+  ctx.font = "800 17px 'Baloo 2'";
+  var tw = ctx.measureText(label).width;
+  var bx = m.x - tw/2 - 8, by = m.y - m.r - 30, bw = tw+16, bh = 24;
+  ctx.fillStyle = PAL.bubble;
+  ctx.strokeStyle = PAL.bubbleEdge; ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx,by,bw,bh,8); else ctx.rect(bx,by,bw,bh);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, m.x, by+bh/2+1);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+function drawShip(){
+  drawAstronaut(ctx, shipAimX, BASE_Y+20, 1, playerKind);
+  ctx.fillStyle = PAL.shipDark;
+  ctx.fillRect(shipAimX-30, BASE_Y+2, 60, 10);
+  ctx.fillStyle = PAL.shipBody;
+  ctx.beginPath(); ctx.arc(shipAimX, BASE_Y-6, 9, Math.PI, Math.PI*2); ctx.fill();
+}
+function drawLaser(){
+  if (!laserFx) return;
+  ctx.save();
+  ctx.strokeStyle = PAL.laser; ctx.lineWidth = 5; ctx.lineCap='round';
+  ctx.globalAlpha = Math.max(0, laserFx.timer/140);
+  ctx.beginPath(); ctx.moveTo(laserFx.x1,laserFx.y1); ctx.lineTo(laserFx.x2,laserFx.y2); ctx.stroke();
+  ctx.strokeStyle = PAL.laserCore; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(laserFx.x1,laserFx.y1); ctx.lineTo(laserFx.x2,laserFx.y2); ctx.stroke();
+  ctx.restore();
+}
+function drawExplosions(){
+  explosions.forEach(function(e){
+    var p = e.t/450;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1-p);
+    ctx.fillStyle = '#ffcf6b';
+    ctx.beginPath(); ctx.arc(e.x, e.y, 10+p*40, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff7043';
+    ctx.beginPath(); ctx.arc(e.x, e.y, 6+p*24, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+function render(){
+  drawSpace();
+  meteors.forEach(drawMeteor);
+  drawExplosions();
+  drawLaser();
+  if (state==='playing' || state==='banner') drawShip();
+  requestAnimationFrame(loop);
+}
+
+// ---------- loop ----------
+var lastT = 0;
+function loop(t){
+  var dt = Math.min(40, t-lastT || 16); lastT = t;
+  update(dt);
+  render();
+}
+
+// ---------- input wiring ----------
+document.querySelectorAll('.numBtn[data-n]').forEach(function(btn){
+  btn.addEventListener('click', function(){ pressDigit(btn.getAttribute('data-n')); });
+});
+document.getElementById('bsBtn').addEventListener('click', pressBackspace);
+document.getElementById('clrBtn').addEventListener('click', pressClear);
+document.getElementById('fireBtn').addEventListener('click', pressFire);
+window.addEventListener('keydown', function(e){
+  if (e.key >= '0' && e.key <= '9'){ pressDigit(e.key); }
+  else if (e.key === 'Backspace'){ pressBackspace(); e.preventDefault(); }
+  else if (e.key === 'Enter'){ pressFire(); }
+});
+
+var chosenKind = prefs.kind || null;
+var cardBoy = document.getElementById('cardBoy'), cardGirl = document.getElementById('cardGirl');
+var nameInput = document.getElementById('nameInput');
+var startBtn = document.getElementById('startBtn');
+if (prefs.name) nameInput.value = prefs.name;
+
+function refreshCards(){
+  cardBoy.setAttribute('aria-pressed', chosenKind==='boy');
+  cardGirl.setAttribute('aria-pressed', chosenKind==='girl');
+  refreshStart();
+}
+function refreshStart(){
+  startBtn.disabled = !(chosenKind && nameInput.value.trim().length>0);
+}
+cardBoy.addEventListener('click', function(){ chosenKind='boy'; refreshCards(); });
+cardGirl.addEventListener('click', function(){ chosenKind='girl'; refreshCards(); });
+if (chosenKind) refreshCards();
+nameInput.addEventListener('input', refreshStart);
+
+startBtn.addEventListener('click', function(){
+  ensureAudio();
+  playerKind = chosenKind; playerName = nameInput.value.trim().slice(0,14);
+  try { localStorage.setItem('robotica_prefs', JSON.stringify({kind:playerKind, name:playerName})); } catch(e){}
+  document.getElementById('startScreen').hidden = true;
+  startGame();
+});
+document.getElementById('retryBtn').addEventListener('click', function(){
+  ensureAudio();
+  document.getElementById('endScreen').hidden = true;
+  startGame();
+});
+
+requestAnimationFrame(loop);
+})();
+</script>
